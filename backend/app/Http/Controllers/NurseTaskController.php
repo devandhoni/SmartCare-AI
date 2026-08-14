@@ -269,34 +269,29 @@ class NurseTaskController extends Controller
 
         ClinicalTimeline::create([
 
+            'resident_id'=>$task->resident_id,
 
-            'resident_id'=>
-                $task->resident_id,
+            'event_type'=>'NURSE_ACTION',
 
-
-            'event_type'=>
-                'NURSE_ACTION',
-
-
-            'event_title'=>
-                'Nurse Accepted AI Task',
-
+            'event_title'=>'Nurse Accepted AI Task',
 
             'event_description'=>
-                'Nurse accepted AI generated clinical task.',
+                'Nurse reviewed and accepted AI generated clinical intervention.',
 
+            'source_type'=>'NurseTask',
 
-            'source_type'=>
-                'NurseTask',
+            'source_id'=>$task->id,
 
+            'event_date'=>now(),
 
-            'source_id'=>
-                $task->id,
+            'decision_status'=>'REVIEWED',
 
+            'reviewed_by'=>auth()->id(),
 
-            'event_date'=>
-                now()
+            'reviewed_at'=>now(),
 
+            'review_action'=>
+                'AI recommendation accepted by nurse.'
 
         ]);
 
@@ -532,7 +527,7 @@ class NurseTaskController extends Controller
 
             'review_action'=>
 
-                'Clinical intervention completed through nurse task.'
+                'AI recommendation reviewed, intervention completed, and clinical task resolved.'
 
 
         ]);
