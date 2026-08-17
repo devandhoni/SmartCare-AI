@@ -17,6 +17,7 @@ use App\Services\HealthTrendAnalyzer;
 use App\Services\HealthJourneyAnalyzer;
 use App\Services\CareRecommendationEngine;
 use App\Services\ClinicalDecisionEngine;
+use App\Services\AIMonitoringAnalyzer;
 
 
 class ClinicalDashboardController extends Controller
@@ -35,7 +36,8 @@ class ClinicalDashboardController extends Controller
         HealthTrendAnalyzer $healthTrendAnalyzer,
         HealthJourneyAnalyzer $healthJourneyAnalyzer,
         CareRecommendationEngine $careRecommendationEngine,
-        ClinicalDecisionEngine $clinicalDecisionEngine
+        ClinicalDecisionEngine $clinicalDecisionEngine,
+        AIMonitoringAnalyzer $aiMonitoringAnalyzer
     )
     {
 
@@ -115,6 +117,16 @@ class ClinicalDashboardController extends Controller
         $healthJourney = $healthJourneyAnalyzer->analyze($id);
 
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | AI Monitoring Analysis
+        |--------------------------------------------------------------------------
+        */
+
+        $aiMonitoring =
+
+            $aiMonitoringAnalyzer->analyze($id);
 
         /*
         |--------------------------------------------------------------------------
@@ -364,7 +376,16 @@ class ClinicalDashboardController extends Controller
             */
 
 
-            'clinical_decision'=>$clinicalDecision
+            'clinical_decision'=>$clinicalDecision,
+            
+
+            /*
+            |--------------------------------------------------------------------------
+            | AI Monitoring Intelligence
+            |--------------------------------------------------------------------------
+            */
+
+            'ai_monitoring'=>$aiMonitoring
 
         ]);
 
