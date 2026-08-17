@@ -7,6 +7,7 @@ use App\Models\ClinicalTimeline;
 use App\Models\ClinicalRecommendation;
 use App\Models\AiAlert;
 use App\Models\ActivityLog;
+use App\Services\ClinicalMonitoringEngine;
 use Carbon\Carbon;
 
 
@@ -17,15 +18,21 @@ class ClinicalDecisionLogger
 
     protected AlertEscalationEngine $alertEscalationEngine;
 
+    protected ClinicalMonitoringEngine $clinicalMonitoringEngine;
 
 
     public function __construct(
-        AlertEscalationEngine $alertEscalationEngine
+        AlertEscalationEngine $alertEscalationEngine,
+        ClinicalMonitoringEngine $clinicalMonitoringEngine
     )
     {
 
-        $this->alertEscalationEngine = 
+        $this->alertEscalationEngine =
             $alertEscalationEngine;
+
+
+        $this->clinicalMonitoringEngine =
+            $clinicalMonitoringEngine;
 
     }
 
@@ -405,7 +412,14 @@ if($priority === "CRITICAL")
 
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | AI Monitoring Snapshot
+        |--------------------------------------------------------------------------
+        */
 
+        $this->clinicalMonitoringEngine
+            ->record($decision);
 
 
 
