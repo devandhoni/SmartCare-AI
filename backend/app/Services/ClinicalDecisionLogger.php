@@ -418,6 +418,7 @@ if($priority === "CRITICAL")
         |--------------------------------------------------------------------------
         */
 
+
         $this->clinicalMonitoringEngine
             ->record($decision);
 

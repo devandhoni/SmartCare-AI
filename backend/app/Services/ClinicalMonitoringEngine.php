@@ -4,8 +4,6 @@ namespace App\Services;
 
 
 use App\Models\AiMonitoringLog;
-use App\Models\ClinicalTimeline;
-use App\Models\VitalSign;
 
 
 
@@ -61,10 +59,8 @@ class ClinicalMonitoringEngine
             $previous?->decision_score;
 
 
-
         $previousPriority =
             $previous?->priority;
-
 
 
 
@@ -151,9 +147,45 @@ class ClinicalMonitoringEngine
 
                     "Initial AI clinical assessment recorded."
 
+
             };
 
 
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Extract Vital Sign Reference Safely
+        |--------------------------------------------------------------------------
+        */
+
+
+        $vitalSignId = null;
+
+
+        if(isset($decision['latest_vital']))
+        {
+
+
+            if(is_object($decision['latest_vital']))
+            {
+
+                $vitalSignId =
+                    $decision['latest_vital']->id;
+
+            }
+            elseif(is_array($decision['latest_vital']))
+            {
+
+                $vitalSignId =
+                    $decision['latest_vital']['id'] ?? null;
+
+            }
+
+
+        }
 
 
 
@@ -198,14 +230,10 @@ class ClinicalMonitoringEngine
 
 
             'vital_sign_id'=>
-
-                isset($decision['latest_vital'])
-                    ? $decision['latest_vital']->id
-                    : null
+                $vitalSignId
 
 
         ]);
-
 
 
     }

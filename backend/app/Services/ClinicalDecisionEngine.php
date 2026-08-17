@@ -605,7 +605,10 @@ class ClinicalDecisionEngine
 
 
             'recommended_actions'=>
-                $recommendedActions
+                $recommendedActions,
+
+            'latest_vital'=>
+                $latestVital
 
 
         ]);
