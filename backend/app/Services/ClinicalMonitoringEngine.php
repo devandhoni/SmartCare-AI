@@ -4,6 +4,8 @@ namespace App\Services;
 
 
 use App\Models\AiMonitoringLog;
+use App\Models\ClinicalTimeline;
+use App\Enums\ClinicalEventType;
 
 
 
@@ -35,14 +37,17 @@ class ClinicalMonitoringEngine
 
 
 
+
+
         /*
         |--------------------------------------------------------------------------
-        | Get Previous AI Decision
+        | Get Previous AI Monitoring Decision
         |--------------------------------------------------------------------------
         */
 
 
         $previous =
+
 
             AiMonitoringLog::where(
                 'resident_id',
@@ -54,13 +59,15 @@ class ClinicalMonitoringEngine
 
 
 
-
         $previousScore =
             $previous?->decision_score;
 
 
         $previousPriority =
             $previous?->priority;
+
+
+
 
 
 
@@ -105,9 +112,12 @@ class ClinicalMonitoringEngine
 
 
 
+
+
+
         /*
         |--------------------------------------------------------------------------
-        | Summary
+        | Generate Summary
         |--------------------------------------------------------------------------
         */
 
@@ -155,9 +165,11 @@ class ClinicalMonitoringEngine
 
 
 
+
+
         /*
         |--------------------------------------------------------------------------
-        | Extract Vital Sign Reference Safely
+        | Extract Vital Sign Reference
         |--------------------------------------------------------------------------
         */
 
@@ -191,14 +203,16 @@ class ClinicalMonitoringEngine
 
 
 
+
+
         /*
         |--------------------------------------------------------------------------
-        | Save Monitoring Log
+        | Save AI Monitoring Log
         |--------------------------------------------------------------------------
         */
 
 
-        return AiMonitoringLog::create([
+        $log = AiMonitoringLog::create([
 
 
             'resident_id'=>
@@ -234,6 +248,83 @@ class ClinicalMonitoringEngine
 
 
         ]);
+
+
+
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create AI Monitoring Timeline Event
+        |--------------------------------------------------------------------------
+        */
+
+
+        ClinicalTimeline::create([
+
+
+            'resident_id'=>
+                $residentId,
+
+
+            'event_type'=>
+                ClinicalEventType::AI_MONITORING,
+
+
+            'event_title'=>
+                'AI Monitoring Review',
+
+
+            'event_description'=>
+
+                'AI Score: '
+                .$currentScore.
+                ', Priority: '
+                .$currentPriority.
+                ', Trend: '
+                .$trend,
+
+
+            'source_type'=>
+                'AiMonitoringLog',
+
+
+            'source_id'=>
+                $log->id,
+
+
+            'event_date'=>
+                now(),
+
+
+            'decision_status'=>
+                'PENDING_REVIEW',
+
+
+            'reviewed_by'=>
+                null,
+
+
+            'reviewed_at'=>
+                null,
+
+
+            'review_action'=>
+                null
+
+
+        ]);
+
+
+
+
+
+
+
+        return $log;
 
 
     }

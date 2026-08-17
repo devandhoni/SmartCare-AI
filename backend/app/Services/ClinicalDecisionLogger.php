@@ -21,6 +21,7 @@ class ClinicalDecisionLogger
     protected ClinicalMonitoringEngine $clinicalMonitoringEngine;
 
 
+
     public function __construct(
         AlertEscalationEngine $alertEscalationEngine,
         ClinicalMonitoringEngine $clinicalMonitoringEngine
@@ -35,6 +36,7 @@ class ClinicalDecisionLogger
             $clinicalMonitoringEngine;
 
     }
+
 
 
 
@@ -75,7 +77,6 @@ class ClinicalDecisionLogger
 
 
 
-
         /*
         |--------------------------------------------------------------------------
         | Prevent Duplicate AI Decision Timeline
@@ -85,26 +86,27 @@ class ClinicalDecisionLogger
 
         $existingTimeline =
 
-        ClinicalTimeline::where(
-            'resident_id',
-            $residentId
-        )
-        ->where(
-            'event_type',
-            'AI_DECISION'
-        )
-        ->where(
-            'event_description',
-            'LIKE',
-            "%decision score {$decisionScore}%"
-        )
-        ->where(
-            'created_at',
-            '>=',
-            Carbon::now()->subMinutes(30)
-        )
-        ->latest('event_date')
-        ->first();
+
+            ClinicalTimeline::where(
+                'resident_id',
+                $residentId
+            )
+            ->where(
+                'event_type',
+                'AI_DECISION'
+            )
+            ->where(
+                'event_description',
+                'LIKE',
+                "%decision score {$decisionScore}%"
+            )
+            ->where(
+                'created_at',
+                '>=',
+                Carbon::now()->subMinutes(30)
+            )
+            ->latest('event_date')
+            ->first();
 
 
 
@@ -187,111 +189,111 @@ class ClinicalDecisionLogger
         }
 
 
-        /*
-|--------------------------------------------------------------------------
-| Create Or Escalate Critical AI Alert
-|--------------------------------------------------------------------------
-*/
-
-if($priority === "CRITICAL")
-{
-
-
-    $criticalAlert = AiAlert::where(
-            'resident_id',
-            $residentId
-        )
-        ->where(
-            'severity',
-            'CRITICAL'
-        )
-        ->where(
-            'status',
-            'OPEN'
-        )
-        ->latest('created_on')
-        ->first();
 
 
 
-    if($criticalAlert)
-    {
+
+
 
 
         /*
         |--------------------------------------------------------------------------
-        | Existing Critical Alert Found
+        | Create Or Escalate Critical AI Alert
         |--------------------------------------------------------------------------
         */
 
 
-        $this->alertEscalationEngine
-            ->escalate(
-                $criticalAlert->id
-            );
+        if($priority === "CRITICAL")
+        {
 
 
-    }
-    else
-    {
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | No Open Critical Alert Found
-        | Create New Alert
-        |--------------------------------------------------------------------------
-        */
-
-
-        $newAlert = AiAlert::create([
-
-
-            'resident_id'=>
-                $residentId,
-
-
-            'alert_type'=>
-                'Critical Clinical Decision',
-
-
-            'severity'=>
-                'CRITICAL',
-
-
-            'message'=>
-
-                "AI detected critical clinical condition. "
-                .
-                implode(
-                    ', ',
-                    $riskFactors
-                ),
-
-
-            'ai_confidence'=>
-                $decisionScore,
-
-
-            'status'=>
-                'OPEN'
-
-
-        ]);
+            $criticalAlert = AiAlert::where(
+                    'resident_id',
+                    $residentId
+                )
+                ->where(
+                    'severity',
+                    'CRITICAL'
+                )
+                ->where(
+                    'status',
+                    'OPEN'
+                )
+                ->latest('created_on')
+                ->first();
 
 
 
 
-        $this->alertEscalationEngine
-            ->escalate(
-                $newAlert->id
-            );
+            if($criticalAlert)
+            {
 
 
-    }
+                $this->alertEscalationEngine
+                    ->escalate(
+                        $criticalAlert->id
+                    );
 
 
-}
+            }
+            else
+            {
+
+
+                $newAlert = AiAlert::create([
+
+
+                    'resident_id'=>
+                        $residentId,
+
+
+                    'alert_type'=>
+                        'Critical Clinical Decision',
+
+
+                    'severity'=>
+                        'CRITICAL',
+
+
+                    'message'=>
+
+                        "AI detected critical clinical condition. "
+                        .
+                        implode(
+                            ', ',
+                            $riskFactors
+                        ),
+
+
+                    'ai_confidence'=>
+                        $decisionScore,
+
+
+                    'status'=>
+                        'OPEN'
+
+
+                ]);
+
+
+
+
+                $this->alertEscalationEngine
+                    ->escalate(
+                        $newAlert->id
+                    );
+
+
+            }
+
+
+        }
+
+
+
+
+
+
 
 
 
@@ -334,7 +336,6 @@ if($priority === "CRITICAL")
 
 
 
-
             if(!$exists)
             {
 
@@ -365,6 +366,7 @@ if($priority === "CRITICAL")
 
 
         }
+
 
 
 
@@ -412,10 +414,19 @@ if($priority === "CRITICAL")
 
 
 
+
+
+
+
+
         /*
         |--------------------------------------------------------------------------
         | AI Monitoring Snapshot
         |--------------------------------------------------------------------------
+        |
+        | Always record AI monitoring history.
+        | This is required for trend analysis.
+        |
         */
 
 
@@ -424,6 +435,16 @@ if($priority === "CRITICAL")
 
 
 
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Result
+        |--------------------------------------------------------------------------
+        */
 
 
         return [

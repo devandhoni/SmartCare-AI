@@ -33,6 +33,7 @@ class ClinicalEventType
 
 
 
+
     /*
     |--------------------------------------------------------------------------
     | Clinical Data
@@ -50,6 +51,9 @@ class ClinicalEventType
 
     public const LAB_RESULT =
         'LAB_RESULT';
+
+
+
 
 
 
@@ -83,6 +87,8 @@ class ClinicalEventType
 
 
 
+
+
     /*
     |--------------------------------------------------------------------------
     | AI Intelligence
@@ -100,6 +106,22 @@ class ClinicalEventType
 
     public const AI_RESOLUTION =
         'AI_RESOLUTION';
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Monitoring
+    |
+    | Stores AI clinical monitoring snapshots,
+    | risk score changes and trend analysis.
+    |--------------------------------------------------------------------------
+    */
+
+
+    public const AI_MONITORING =
+        'AI_MONITORING';
+
+
 
 
 
@@ -125,6 +147,8 @@ class ClinicalEventType
 
 
 
+
+
     /*
     |--------------------------------------------------------------------------
     | External Data
@@ -134,6 +158,7 @@ class ClinicalEventType
 
     public const DOCUMENT_UPLOAD =
         'DOCUMENT_UPLOAD';
+
 
 
 
