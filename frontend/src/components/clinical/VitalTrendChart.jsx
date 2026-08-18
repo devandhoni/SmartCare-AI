@@ -7,8 +7,8 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
-    ResponsiveContainer
+    ResponsiveContainer,
+    ReferenceLine
 } from "recharts";
 
 
@@ -24,31 +24,27 @@ export default function VitalTrendChart({
 
         return (
 
-            <div
-            className="
-            bg-white
-            rounded-xl
-            shadow
-            p-6
-            "
-            >
+            <div className="
+                bg-white
+                rounded-xl
+                shadow
+                p-6
+                mt-6
+            ">
 
-                <h2
-                className="
-                text-lg
-                font-bold
-                "
-                >
+                <h2 className="
+                    text-lg
+                    font-bold
+                    text-gray-800
+                ">
                     Vital Trend Analysis
                 </h2>
 
 
-                <p
-                className="
-                text-gray-500
-                mt-3
-                "
-                >
+                <p className="
+                    text-gray-500
+                    mt-3
+                ">
                     No historical vital data available.
                 </p>
 
@@ -61,31 +57,138 @@ export default function VitalTrendChart({
 
 
 
+    const ChartCard = ({
+        title,
+        dataKey,
+        color,
+        unit,
+        criticalLine,
+        criticalLabel
+    }) => {
+
+
+        return (
+
+            <div className="
+                bg-gray-50
+                rounded-xl
+                p-5
+                border
+            ">
+
+
+                <h3 className="
+                    font-bold
+                    text-gray-800
+                    mb-3
+                ">
+
+                    {title}
+
+                </h3>
+
+
+
+                <ResponsiveContainer
+                    width="100%"
+                    height={250}
+                >
+
+
+                    <LineChart
+                        data={vitals}
+                    >
+
+
+                        <CartesianGrid
+                            strokeDasharray="3 3"
+                        />
+
+
+
+                        <XAxis
+                            dataKey="date"
+                        />
+
+
+
+                        <YAxis />
+
+
+
+                        <Tooltip />
+
+
+
+                        {
+                            criticalLine &&
+                            (
+
+                                <ReferenceLine
+
+                                    y={criticalLine}
+
+                                    label={criticalLabel}
+
+                                />
+
+                            )
+                        }
+
+
+
+                        <Line
+
+                            type="monotone"
+
+                            dataKey={dataKey}
+
+                            stroke={color}
+
+                            strokeWidth={3}
+
+                            dot
+
+                        />
+
+
+
+                    </LineChart>
+
+
+                </ResponsiveContainer>
+
+
+            </div>
+
+        );
+
+    };
+
+
+
+
+
 
     return (
 
-        <div
-        className="
-        bg-white
-        rounded-xl
-        shadow
-        p-6
-        mt-6
-        "
-        >
+        <div className="
+            bg-white
+            rounded-xl
+            shadow
+            p-6
+            mt-6
+        ">
 
 
+            <h2 className="
+                text-xl
+                font-bold
+                text-gray-800
+                mb-6
+            ">
 
-            <h2
-            className="
-            text-lg
-            font-bold
-            text-gray-800
-            mb-5
-            "
-            >
-
-                Vital Trend Analysis
+                Vital Trend Intelligence
 
             </h2>
 
@@ -93,92 +196,96 @@ export default function VitalTrendChart({
 
 
 
-            <ResponsiveContainer
-                width="100%"
-                height={350}
-            >
+            <div className="
+                grid
+                grid-cols-1
+                lg:grid-cols-2
+                gap-6
+            ">
 
 
-                <LineChart
-                    data={vitals}
-                >
+                <ChartCard
 
+                    title="Blood Pressure (Systolic)"
 
-                    <CartesianGrid
-                    strokeDasharray="3 3"
-                    />
+                    dataKey="blood_pressure_systolic"
 
+                    color="#dc2626"
 
+                    unit="mmHg"
 
-                    <XAxis
-                        dataKey="date"
-                    />
+                    criticalLine={180}
 
+                    criticalLabel="Critical BP"
 
-
-                    <YAxis />
-
-
-
-                    <Tooltip />
-
-
-
-                    <Legend />
+                />
 
 
 
 
 
-                    <Line
-                        type="monotone"
-                        dataKey="blood_pressure_systolic"
-                        name="Systolic BP"
-                        strokeWidth={3}
-                    />
+                <ChartCard
+
+                    title="Oxygen Saturation"
+
+                    dataKey="oxygen_level"
+
+                    color="#2563eb"
+
+                    unit="%"
+
+                    criticalLine={90}
+
+                    criticalLabel="Low Oxygen"
+
+                />
 
 
 
-                    <Line
-                        type="monotone"
-                        dataKey="oxygen_level"
-                        name="Oxygen Level"
-                        strokeWidth={3}
-                    />
+
+
+                <ChartCard
+
+                    title="Blood Glucose"
+
+                    dataKey="blood_glucose"
+
+                    color="#f59e0b"
+
+                    unit="mmol/L"
+
+                    criticalLine={13}
+
+                    criticalLabel="High Glucose"
+
+                />
 
 
 
-                    <Line
-                        type="monotone"
-                        dataKey="blood_glucose"
-                        name="Glucose"
-                        strokeWidth={3}
-                    />
 
 
+                <ChartCard
 
-                    <Line
-                        type="monotone"
-                        dataKey="temperature"
-                        name="Temperature"
-                        strokeWidth={3}
-                    />
+                    title="Body Temperature"
+
+                    dataKey="temperature"
+
+                    color="#7c3aed"
+
+                    unit="°C"
+
+                    criticalLine={39}
+
+                    criticalLabel="High Temperature"
+
+                />
 
 
-
-                </LineChart>
-
-
-            </ResponsiveContainer>
-
-
-
+            </div>
 
 
         </div>
 
-
     );
-
 
 }

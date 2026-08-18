@@ -42,6 +42,18 @@ class VitalSign extends Model
 
 
 
+     protected $casts = [
+
+        'recorded_at' => 'datetime',
+
+        'created_on' => 'datetime',
+
+        'updated_on' => 'datetime'
+
+    ];
+
+
+    
     /*
     |--------------------------------------------------------------------------
     | Relationship

@@ -43,6 +43,7 @@ use App\Http\Controllers\AIAutoNurseTaskController;
 use App\Http\Controllers\AIAlertPerformanceController;
 use App\Http\Controllers\AIDashboardController;
 use App\Http\Controllers\ClinicalDecisionReviewController;
+use App\Http\Controllers\VitalTrendController;
 
 /*
 |--------------------------------------------------------------------------
@@ -1051,6 +1052,19 @@ Route::middleware([
     ]
 );
 
+
+
+/*
+|--------------------------------------------------------------------------
+| Vital Trend Controller
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get(
+    '/residents/{residentId}/vital-trends',
+    [VitalTrendController::class,'index']
+);
 
 
 /*

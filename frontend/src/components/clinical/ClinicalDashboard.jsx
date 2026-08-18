@@ -6,6 +6,7 @@ import LatestVitalCard from "./LatestVitalCard";
 import ActiveAlertCard from "./ActiveAlertCard";
 import AIRiskCard from "./AIRiskCard";
 import VitalTrendChart from "./VitalTrendChart";
+import VitalMonitoringCard from "./VitalMonitoringCard";
 
 
 function ClinicalDashboard({ residentId }) {
@@ -377,11 +378,9 @@ function ClinicalDashboard({ residentId }) {
 
             </div>
 
-            <VitalTrendChart
+            <VitalMonitoringCard
 
-                vitals={
-                    data.health_trend?.vitals ?? []
-                }
+                residentId={residentId}
 
             />
 
