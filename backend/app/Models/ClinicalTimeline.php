@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Resident;
 use App\Models\AiAlert;
 use App\Models\VitalSign;
+use App\Models\AiMonitoringLog;
 use App\Models\MedicationAdministrationRecord;
 use App\Models\ResidentMedication;
 use App\Models\ClinicalDocument;
@@ -43,9 +44,9 @@ class ClinicalTimeline extends Model
         'decision_status',
 
         'reviewed_by',
-        
+
         'reviewed_at',
-        
+
         'review_action'
 
 
@@ -64,6 +65,8 @@ class ClinicalTimeline extends Model
 
 
     ];
+
+
 
 
 
@@ -99,6 +102,8 @@ class ClinicalTimeline extends Model
 
 
 
+
+
     /*
     |--------------------------------------------------------------------------
     | Vital Sign Source
@@ -127,6 +132,9 @@ class ClinicalTimeline extends Model
 
 
     }
+
+
+
 
 
 
@@ -172,6 +180,51 @@ class ClinicalTimeline extends Model
 
 
 
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Monitoring Source
+    |--------------------------------------------------------------------------
+    */
+
+
+    public function monitoring()
+    {
+
+
+        return $this->belongsTo(
+
+            AiMonitoringLog::class,
+
+            'source_id'
+
+        )
+        ->where(
+
+            'source_type',
+
+            'AiMonitoringLog'
+
+        );
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
     /*
     |--------------------------------------------------------------------------
     | Dynamic Source Relationship
@@ -187,7 +240,6 @@ class ClinicalTimeline extends Model
 
         return match($this->source_type)
         {
-
 
 
             'AiAlert' =>
@@ -210,6 +262,21 @@ class ClinicalTimeline extends Model
                 $this->belongsTo(
 
                     VitalSign::class,
+
+                    'source_id'
+
+                ),
+
+
+
+
+
+
+            'AiMonitoringLog' =>
+
+                $this->belongsTo(
+
+                    AiMonitoringLog::class,
 
                     'source_id'
 
@@ -265,14 +332,22 @@ class ClinicalTimeline extends Model
 
 
 
-            default => null
+            default =>
 
+                $this->belongsTo(
+
+                    ClinicalTimeline::class,
+
+                    'id'
+
+                )
 
 
         };
 
 
     }
+
 
 
 

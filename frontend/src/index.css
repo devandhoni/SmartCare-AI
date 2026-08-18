@@ -110,3 +110,13 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+
+/* Clinical Dashboard Card Titles */
+
+.clinical-dashboard .card-title {
+
+    color:#111827;
+    font-weight:700;
+
+}

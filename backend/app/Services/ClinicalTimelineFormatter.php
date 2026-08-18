@@ -25,6 +25,10 @@ class ClinicalTimelineFormatter
 
 
 
+
+
+
+
         /*
         |--------------------------------------------------------------------------
         | AI Alert Data
@@ -43,6 +47,7 @@ class ClinicalTimelineFormatter
 
             if($alert)
             {
+
 
                 $severity =
                     $alert->severity;
@@ -77,6 +82,10 @@ class ClinicalTimelineFormatter
 
 
 
+
+
+
+
         /*
         |--------------------------------------------------------------------------
         | Vital Data
@@ -102,27 +111,26 @@ class ClinicalTimelineFormatter
 
                     'blood_pressure'=>
 
-                    $vital->blood_pressure_systolic
-                    .
-                    '/'
-                    .
-                    $vital->blood_pressure_diastolic,
+                        $vital->blood_pressure_systolic
+                        .
+                        '/'
+                        .
+                        $vital->blood_pressure_diastolic,
 
 
                     'oxygen'=>
 
-                    $vital->oxygen_level.'%',
+                        $vital->oxygen_level.'%',
 
 
                     'glucose'=>
 
-                    $vital->blood_glucose,
+                        $vital->blood_glucose,
 
 
                     'temperature'=>
 
-                    $vital->temperature
-
+                        $vital->temperature
 
 
                 ];
@@ -136,6 +144,151 @@ class ClinicalTimelineFormatter
 
 
 
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AI Monitoring Data
+        |--------------------------------------------------------------------------
+        */
+
+
+        if(
+            $event->source_type === 'AiMonitoringLog'
+        )
+        {
+
+
+            $monitoring =
+                $event->source;
+
+
+
+            if($monitoring)
+            {
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Map AI Priority As Timeline Severity
+                |--------------------------------------------------------------------------
+                */
+
+
+                $severity =
+                    $monitoring->priority;
+
+
+
+                $clinicalData = [
+
+
+                    'decision_score'=>
+
+                        $monitoring->decision_score,
+
+
+
+                    'priority'=>
+
+                        $monitoring->priority,
+
+
+
+                    'previous_score'=>
+
+                        $monitoring->previous_score,
+
+
+
+                    'previous_priority'=>
+
+                        $monitoring->previous_priority,
+
+
+
+                    'trend'=>
+
+                        $monitoring->trend,
+
+
+
+                    'summary'=>
+
+                        $monitoring->summary
+
+
+
+                ];
+
+
+
+
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | Linked Vital Sign
+                |--------------------------------------------------------------------------
+                */
+
+
+                if($monitoring->vitalSign)
+                {
+
+
+                    $clinicalData['linked_vital'] = [
+
+
+                        'blood_pressure'=>
+
+                            $monitoring->vitalSign->blood_pressure_systolic
+                            .
+                            '/'
+                            .
+                            $monitoring->vitalSign->blood_pressure_diastolic,
+
+
+
+                        'oxygen'=>
+
+                            $monitoring->vitalSign->oxygen_level.'%',
+
+
+
+                        'glucose'=>
+
+                            $monitoring->vitalSign->blood_glucose,
+
+
+
+                        'temperature'=>
+
+                            $monitoring->vitalSign->temperature
+
+
+
+                    ];
+
+
+                }
+
+
+            }
+
+
+        }
+
+
+
+
+
+
+
+
+
         return [
 
 
@@ -143,30 +296,37 @@ class ClinicalTimelineFormatter
                 $event->event_date,
 
 
+
             'type'=>
                 $event->event_type,
+
 
 
             'category'=>
                 $category,
 
 
+
             'severity'=>
                 $severity,
+
 
 
             'title'=>
                 $event->event_title,
 
 
+
             'clinical_summary'=>
                 $event->event_description,
+
 
 
             'source'=>
                 $this->getSourceName(
                     $event->source_type
                 ),
+
 
 
             'data'=>
@@ -178,6 +338,8 @@ class ClinicalTimelineFormatter
 
 
     }
+
+
 
 
 
@@ -202,11 +364,14 @@ class ClinicalTimelineFormatter
 
 
 
+
+
             ClinicalEventType::VITAL,
             ClinicalEventType::DIAGNOSIS,
             ClinicalEventType::LAB_RESULT
 
             => 'Clinical Observation',
+
 
 
 
@@ -221,11 +386,15 @@ class ClinicalTimelineFormatter
 
 
 
+
             ClinicalEventType::AI_ALERT,
             ClinicalEventType::AI_ESCALATION,
-            ClinicalEventType::AI_RESOLUTION
+            ClinicalEventType::AI_RESOLUTION,
+            ClinicalEventType::AI_DECISION,
+            ClinicalEventType::AI_MONITORING
 
             => 'AI Intelligence',
+
 
 
 
@@ -237,6 +406,8 @@ class ClinicalTimelineFormatter
 
 
 
+
+
             ClinicalEventType::DOCUMENT_UPLOAD
 
             => 'Medical Document',
@@ -244,12 +415,16 @@ class ClinicalTimelineFormatter
 
 
 
+
             default => 'General'
+
 
         };
 
 
     }
+
+
 
 
 
@@ -269,12 +444,20 @@ class ClinicalTimelineFormatter
                 => 'AI Engine',
 
 
+
             'VitalSign'
                 => 'Vital Monitoring',
 
 
+
+            'AiMonitoringLog'
+                => 'AI Monitoring Engine',
+
+
+
             'MedicationAdministrationRecord'
                 => 'Medication System',
+
 
 
             default

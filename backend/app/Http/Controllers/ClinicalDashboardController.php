@@ -274,15 +274,37 @@ class ClinicalDashboardController extends Controller
 
             'health_status'=>[
 
-                'risk_score'=>$riskScore?->risk_score ?? 0,
 
-                'risk_level'=>$riskScore?->risk_level ?? 'LOW',
+            'risk_score'=>$riskScore?->risk_score ?? 0,
 
-                'summary'=>$riskScore?->reason 
-                    ?? 
-                    'No risk assessment available'
 
-            ],
+            'risk_level'=>
+                $healthTrend['current_condition']['status']
+                ??
+                'UNKNOWN',
+
+
+
+            'summary'=>
+
+                !empty(
+                    $healthTrend['current_condition']['reasons']
+                )
+
+                ?
+
+                implode(
+                    " ",
+                    $healthTrend['current_condition']['reasons']
+                )
+
+                :
+
+                'No clinical risk detected.'
+
+
+
+        ],
 
 
 

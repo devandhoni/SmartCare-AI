@@ -41,6 +41,8 @@ class ClinicalTimelineController extends Controller
 
 
 
+
+
         /*
         |--------------------------------------------------------------------------
         | Get Timeline Events
@@ -50,8 +52,11 @@ class ClinicalTimelineController extends Controller
 
         $events =
 
-            $timelineService
+             $timelineService
             ->getTimeline($id);
+
+
+
 
 
 
@@ -77,7 +82,8 @@ class ClinicalTimelineController extends Controller
                     ->format($event);
 
 
-            });
+            })
+            ->values();
 
 
 
@@ -97,11 +103,60 @@ class ClinicalTimelineController extends Controller
         $criticalEvents =
 
             $events
-            ->where(
-                'event_type',
-                'AI_ALERT'
-            )
+            ->filter(function($event)
+            {
+
+
+                /*
+                | AI Alert Critical
+                */
+
+
+                if(
+                    $event->event_type === 'AI_ALERT'
+                    &&
+                    $event->source
+                )
+                {
+
+                    return
+                        $event->source->severity === 'CRITICAL';
+
+                }
+
+
+
+
+
+                /*
+                | AI Monitoring Critical
+                */
+
+
+                if(
+                    $event->event_type === 'AI_MONITORING'
+                    &&
+                    $event->source
+                )
+                {
+
+                    return
+                        $event->source->priority === 'CRITICAL';
+
+                }
+
+
+
+                return false;
+
+
+            })
             ->count();
+
+
+
+
+
 
 
 
@@ -111,6 +166,8 @@ class ClinicalTimelineController extends Controller
 
             $events
             ->first();
+
+
 
 
 
@@ -167,9 +224,13 @@ class ClinicalTimelineController extends Controller
 
 
 
+
+
                 "critical_events"=>
 
                     $criticalEvents,
+
+
 
 
 
@@ -192,6 +253,7 @@ class ClinicalTimelineController extends Controller
 
 
 
+
                 "risk_level"=>
 
                     $criticalEvents > 0
@@ -207,6 +269,7 @@ class ClinicalTimelineController extends Controller
 
 
             ],
+
 
 
 

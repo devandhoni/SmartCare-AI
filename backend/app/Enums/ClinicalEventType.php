@@ -107,6 +107,11 @@ class ClinicalEventType
     public const AI_RESOLUTION =
         'AI_RESOLUTION';
 
+    public const AI_DECISION =
+        'AI_DECISION';
+
+   
+
 
     /*
     |--------------------------------------------------------------------------
