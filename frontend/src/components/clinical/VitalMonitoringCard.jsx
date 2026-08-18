@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, {
+    useEffect,
+    useState
+} from "react";
 
 
 import {
@@ -8,12 +11,14 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
+    Legend,
     ResponsiveContainer
 } from "recharts";
 
 
-import { getVitalTrend } from "../../api/vitalTrendApi";
-
+import {
+    getVitalTrend
+} from "../../api/vitalTrendApi";
 
 
 
@@ -22,21 +27,40 @@ import { getVitalTrend } from "../../api/vitalTrendApi";
 
 
 export default function VitalMonitoringCard({
-    residentId
+
+    residentId,
+
+    activeAction
+
 }) {
 
 
 
-    const [period,setPeriod] = useState("24hours");
+    const [
+        period,
+        setPeriod
+    ] = useState("7days");
 
 
-    const [metric,setMetric] = useState("all");
+
+    const [
+        metric,
+        setMetric
+    ] = useState("all");
 
 
-    const [chartData,setChartData] = useState([]);
+
+    const [
+        chartData,
+        setChartData
+    ] = useState([]);
 
 
-    const [loading,setLoading] = useState(true);
+
+    const [
+        loading,
+        setLoading
+    ] = useState(true);
 
 
 
@@ -51,15 +75,114 @@ export default function VitalMonitoringCard({
 
         if(residentId)
         {
+
             loadVitalTrend();
+
         }
 
 
     },[
+
         residentId,
+
         period,
+
         metric
+
     ]);
+
+
+
+
+
+
+
+
+
+    /*
+        Timeline Button Action
+
+        Example:
+
+        AI Timeline
+              |
+              |
+              ↓
+
+        View Vital Trend
+
+              |
+              |
+              ↓
+
+        Update chart automatically
+
+    */
+
+
+    useEffect(()=>{
+
+
+        if(activeAction)
+        {
+
+
+            if(
+                activeAction.section === "VITAL"
+            )
+            {
+
+
+                setPeriod(
+                    activeAction.period
+                );
+
+
+
+                setMetric(
+                    activeAction.metric
+                );
+
+
+
+
+
+                setTimeout(()=>{
+
+
+                    document
+                    .getElementById(
+                        "vital-trend-section"
+                    )
+                    ?.scrollIntoView({
+
+                        behavior:
+                        "smooth",
+
+                        block:
+                        "start"
+
+                    });
+
+
+
+                },300);
+
+
+
+            }
+
+
+        }
+
+
+
+    },[
+        activeAction
+    ]);
+
+
+
 
 
 
@@ -81,11 +204,16 @@ export default function VitalMonitoringCard({
 
 
             const result =
-                await getVitalTrend(
-                    residentId,
-                    period,
-                    metric
-                );
+            await getVitalTrend(
+
+                residentId,
+
+                period,
+
+                metric
+
+            );
+
 
 
 
@@ -96,8 +224,11 @@ export default function VitalMonitoringCard({
 
 
 
+
             setChartData(
+
                 result.data ?? []
+
             );
 
 
@@ -108,8 +239,11 @@ export default function VitalMonitoringCard({
 
 
             console.error(
+
                 "Vital Trend Error:",
+
                 error
+
             );
 
 
@@ -122,6 +256,7 @@ export default function VitalMonitoringCard({
         }
 
 
+
     };
 
 
@@ -132,13 +267,21 @@ export default function VitalMonitoringCard({
 
 
 
+
+
+
     const latestReading =
+
         chartData.length > 0
+
         ?
+
         chartData[
             chartData.length - 1
         ]
+
         :
+
         null;
 
 
@@ -149,27 +292,46 @@ export default function VitalMonitoringCard({
 
 
 
+
+
+
+
     const getRiskStatus = (
+
         type,
+
         value
+
     )=>{
 
 
-        if(!value)
+        if(
+            value === null ||
+            value === undefined
+        )
+        {
+
             return "normal";
 
+        }
 
 
 
-        if(type==="temperature")
+
+
+        if(
+            type==="temperature"
+        )
         {
+
 
             if(value >= 39)
                 return "critical";
 
 
-            if(value >= 38)
+            if(value >=38)
                 return "warning";
+
 
         }
 
@@ -178,15 +340,21 @@ export default function VitalMonitoringCard({
 
 
 
-        if(type==="oxygen")
+
+
+        if(
+            type==="oxygen"
+        )
         {
 
-            if(value < 90)
+
+            if(value <90)
                 return "critical";
 
 
-            if(value < 94)
+            if(value <94)
                 return "warning";
+
 
         }
 
@@ -195,15 +363,21 @@ export default function VitalMonitoringCard({
 
 
 
-        if(type==="glucose")
+
+
+        if(
+            type==="glucose"
+        )
         {
 
-            if(value >= 13)
+
+            if(value >=13)
                 return "critical";
 
 
-            if(value >= 10)
+            if(value >=10)
                 return "warning";
+
 
         }
 
@@ -212,26 +386,48 @@ export default function VitalMonitoringCard({
 
 
 
-        if(type==="bp")
+
+
+        if(
+            type==="bp"
+        )
         {
 
 
             const systolic =
-                Number(
-                    value?.split("/")?.[0]
-                );
+
+            Number(
+                value
+                ?.split("/")
+                [0]
+            );
 
 
 
-            if(systolic >= 180)
+            if(
+                systolic >=180
+            )
+            {
+
                 return "critical";
 
+            }
 
-            if(systolic >= 140)
+
+
+            if(
+                systolic >=140
+            )
+            {
+
                 return "warning";
+
+            }
 
 
         }
+
+
 
 
 
@@ -250,12 +446,19 @@ export default function VitalMonitoringCard({
 
 
 
+
+
+
     const statusStyle = (
+
         status
+
     )=>{
 
 
-        if(status==="critical")
+        if(
+            status==="critical"
+        )
         {
 
             return "bg-red-100 text-red-700";
@@ -264,12 +467,17 @@ export default function VitalMonitoringCard({
 
 
 
-        if(status==="warning")
+
+
+        if(
+            status==="warning"
+        )
         {
 
             return "bg-orange-100 text-orange-700";
 
         }
+
 
 
 
@@ -279,47 +487,53 @@ export default function VitalMonitoringCard({
     };
 
 
+        const VitalBox = ({
 
-
-
-
-
-
-
-    const VitalBox = ({
         title,
+
         value,
+
         type,
+
         unit=""
+
     })=>{
 
 
         const status =
-            getRiskStatus(
-                type,
-                value
-            );
+
+        getRiskStatus(
+
+            type,
+
+            value
+
+        );
 
 
 
         return (
 
             <div
+
             className="
             bg-gray-50
             rounded-xl
             p-4
             border
             "
+
             >
 
 
                 <p
+
                 className="
                 text-sm
                 font-semibold
                 text-gray-600
                 "
+
                 >
 
                     {title}
@@ -329,20 +543,24 @@ export default function VitalMonitoringCard({
 
 
 
-
                 <p
+
                 className="
                 text-2xl
                 font-bold
                 text-gray-800
                 mt-2
                 "
+
                 >
 
-                    {value ?? "-"}
+                    {
+                        value ?? "-"
+                    }
 
-                    {unit}
-
+                    {
+                        unit
+                    }
 
                 </p>
 
@@ -351,6 +569,7 @@ export default function VitalMonitoringCard({
 
 
                 <span
+
                 className={`
                 inline-block
                 mt-2
@@ -361,9 +580,12 @@ export default function VitalMonitoringCard({
                 font-bold
                 ${statusStyle(status)}
                 `}
+
                 >
 
-                    {status.toUpperCase()}
+                    {
+                        status.toUpperCase()
+                    }
 
                 </span>
 
@@ -384,28 +606,6 @@ export default function VitalMonitoringCard({
 
 
 
-    const getXAxisKey = ()=>{
-
-
-        if(
-            period==="today"
-            ||
-            period==="24hours"
-        )
-        {
-
-            return "time";
-
-        }
-
-
-        return "date";
-
-
-    };
-
-
-
 
 
 
@@ -413,31 +613,40 @@ export default function VitalMonitoringCard({
 
 
     const TrendChart = ({
+
         title,
+
         dataKey,
+
         unit=""
+
     })=>{
 
 
         return (
 
             <div
+
             className="
             bg-gray-50
             rounded-xl
             p-5
             border
             "
+
             >
 
 
+
                 <h3
+
                 className="
                 text-lg
                 font-bold
                 text-gray-800
                 mb-4
                 "
+
                 >
 
                     {title}
@@ -448,30 +657,47 @@ export default function VitalMonitoringCard({
 
 
 
+
                 <ResponsiveContainer
+
                     width="100%"
+
                     height={280}
+
                 >
 
 
                     <LineChart
+
                         data={chartData}
+
                     >
 
 
+
                         <CartesianGrid
+
                         strokeDasharray="3 3"
+
                         />
+
 
 
 
                         <XAxis
 
                         dataKey={
-                            getXAxisKey()
+                            period==="today"
+                            ||
+                            period==="24hours"
+                            ?
+                            "time"
+                            :
+                            "date"
                         }
 
                         />
+
 
 
 
@@ -479,17 +705,31 @@ export default function VitalMonitoringCard({
 
 
 
+
                         <Tooltip
 
                         formatter={
+
                             (value)=>
+
                             [
+
                                 `${value}${unit}`,
+
                                 title
+
                             ]
+
                         }
 
                         />
+
+
+
+
+                        <Legend />
+
+
 
 
 
@@ -499,11 +739,15 @@ export default function VitalMonitoringCard({
 
                         dataKey={dataKey}
 
+                        name={title}
+
                         strokeWidth={3}
 
                         dot={true}
 
                         />
+
+
 
 
                     </LineChart>
@@ -514,15 +758,30 @@ export default function VitalMonitoringCard({
 
             </div>
 
-
         );
 
 
     };
 
-        return (
+
+
+
+
+
+
+
+
+
+
+
+
+
+    return (
 
         <div
+
+        id="vital-trend-section"
+
         className="
         bg-white
         rounded-xl
@@ -530,20 +789,22 @@ export default function VitalMonitoringCard({
         p-6
         mt-6
         "
+
         >
 
 
 
 
 
-
             <h2
+
             className="
             text-xl
             font-bold
             text-gray-800
             mb-6
             "
+
             >
 
                 Vital Trend Intelligence
@@ -560,20 +821,26 @@ export default function VitalMonitoringCard({
 
             {/* Latest Vital Summary */}
 
+
             <div
+
             className="
             mb-8
             "
+
             >
 
 
+
                 <h3
+
                 className="
                 text-lg
                 font-bold
                 text-gray-700
                 mb-4
                 "
+
                 >
 
                     Latest Vital Summary
@@ -584,130 +851,120 @@ export default function VitalMonitoringCard({
 
 
 
+
+
                 {
-                    latestReading ?
+
+                latestReading &&
 
 
-                    (
+                <div
 
-                    <div
-                    className="
-                    grid
-                    grid-cols-1
-                    md:grid-cols-2
-                    lg:grid-cols-5
-                    gap-4
-                    "
-                    >
+                className="
+                grid
+                grid-cols-1
+                md:grid-cols-2
+                lg:grid-cols-5
+                gap-4
+                "
 
-
-                        <VitalBox
-
-                            title="Temperature"
-
-                            value={
-                                latestReading.temperature
-                            }
-
-                            unit=" °C"
-
-                            type="temperature"
-
-                        />
+                >
 
 
 
+                    <VitalBox
 
-                        <VitalBox
+                    title="Temperature"
 
-                            title="Oxygen Level"
+                    value={
+                        latestReading.temperature
+                    }
 
-                            value={
-                                latestReading.oxygen_level
-                            }
+                    unit=" °C"
 
-                            unit=" %"
+                    type="temperature"
 
-                            type="oxygen"
-
-                        />
+                    />
 
 
 
 
 
-                        <VitalBox
+                    <VitalBox
 
-                            title="Blood Glucose"
+                    title="Oxygen Level"
 
-                            value={
-                                latestReading.blood_glucose
-                            }
+                    value={
+                        latestReading.oxygen_level
+                    }
 
-                            type="glucose"
+                    unit=" %"
 
-                        />
+                    type="oxygen"
 
-
-
-
-
-                        <VitalBox
-
-                            title="Blood Pressure"
-
-                            value={
-                                latestReading.blood_pressure
-                            }
-
-                            type="bp"
-
-                        />
+                    />
 
 
 
 
 
-                        <VitalBox
 
-                            title="Heart Rate"
+                    <VitalBox
 
-                            value={
-                                latestReading.heart_rate
-                            }
+                    title="Blood Glucose"
 
-                            unit=" bpm"
+                    value={
+                        latestReading.blood_glucose
+                    }
 
-                            type="heart_rate"
+                    type="glucose"
 
-                        />
-
+                    />
 
 
-                    </div>
-
-                    )
 
 
-                    :
 
 
-                    (
 
-                    <div
-                    className="
-                    bg-gray-50
-                    rounded-lg
-                    p-5
-                    text-gray-500
-                    "
-                    >
+                    <VitalBox
 
-                        No latest vital reading available.
+                    title="Blood Pressure"
 
-                    </div>
+                    value={
+                        latestReading.blood_pressure
+                    }
 
-                    )
+                    type="bp"
+
+                    />
+
+
+
+
+
+
+
+                    <VitalBox
+
+                    title="Heart Rate"
+
+                    value={
+                        latestReading.heart_rate
+                    }
+
+                    unit=" bpm"
+
+                    type="heart_rate"
+
+                    />
+
+
+
+
+
+                </div>
+
 
                 }
 
@@ -726,17 +983,21 @@ export default function VitalMonitoringCard({
 
 
 
+
             {/* Filters */}
 
 
+
             <div
+
             className="
             grid
             grid-cols-1
             md:grid-cols-2
-            gap-5
+            gap-4
             mb-8
             "
+
             >
 
 
@@ -746,13 +1007,16 @@ export default function VitalMonitoringCard({
                 <div>
 
 
+
                     <label
+
                     className="
                     block
                     font-semibold
                     text-gray-700
                     mb-2
                     "
+
                     >
 
                         Monitoring Period
@@ -762,15 +1026,21 @@ export default function VitalMonitoringCard({
 
 
 
+
                     <select
+
 
                     value={period}
 
+
                     onChange={
+
                         (e)=>
+
                         setPeriod(
                             e.target.value
                         )
+
                     }
 
 
@@ -779,34 +1049,52 @@ export default function VitalMonitoringCard({
                     border
                     rounded-lg
                     p-2
-                    text-gray-700
                     "
 
                     >
 
 
-                        <option value="24hours">
-                            Last 24 Hours
-                        </option>
-
 
                         <option value="today">
+
                             Today
+
                         </option>
+
+
+
+
+
+                        <option value="24hours">
+
+                            Last 24 Hours
+
+                        </option>
+
+
+
 
 
                         <option value="7days">
+
                             Last 7 Days
+
                         </option>
 
 
+
+
+
                         <option value="30days">
+
                             Last 30 Days
+
                         </option>
 
 
 
                     </select>
+
 
 
                 </div>
@@ -822,13 +1110,16 @@ export default function VitalMonitoringCard({
                 <div>
 
 
+
                     <label
+
                     className="
                     block
                     font-semibold
                     text-gray-700
                     mb-2
                     "
+
                     >
 
                         Vital Metric
@@ -839,15 +1130,21 @@ export default function VitalMonitoringCard({
 
 
 
+
                     <select
+
 
                     value={metric}
 
+
                     onChange={
+
                         (e)=>
+
                         setMetric(
                             e.target.value
                         )
+
                     }
 
 
@@ -856,37 +1153,66 @@ export default function VitalMonitoringCard({
                     border
                     rounded-lg
                     p-2
-                    text-gray-700
                     "
 
                     >
 
 
+
                         <option value="all">
+
                             All Vitals
+
                         </option>
+
+
+
 
 
                         <option value="temperature">
+
                             Temperature
+
                         </option>
+
+
 
 
 
                         <option value="oxygen">
+
                             Oxygen Level
+
                         </option>
+
+
 
 
 
                         <option value="glucose">
+
                             Blood Glucose
+
                         </option>
 
 
 
+
+
                         <option value="heart_rate">
+
                             Heart Rate
+
+                        </option>
+
+
+
+
+
+                        <option value="blood_pressure">
+
+                            Blood Pressure
+
                         </option>
 
 
@@ -900,164 +1226,107 @@ export default function VitalMonitoringCard({
 
 
 
+
             </div>
 
+            
 
 
 
-
-
-
-
-
-
-
-
-            {/* Chart Area */}
 
 
             {
-                loading ?
+                loading
 
-
+                ?
 
                 (
 
                     <div
+
                     className="
                     text-center
                     py-10
                     text-gray-500
                     "
+
                     >
 
-                        Loading vital trend data...
+                        Loading vital trend...
 
                     </div>
 
-
                 )
-
-
 
 
                 :
 
 
+                chartData.length === 0
 
-                chartData.length === 0 ?
 
-
+                ?
 
                 (
 
                     <div
+
                     className="
-                    bg-gray-50
-                    rounded-xl
-                    p-8
                     text-center
+                    py-10
                     text-gray-500
                     "
+
                     >
 
-                        <p
-                        className="
-                        font-semibold
-                        "
-                        >
-
-                            No vital readings available
-                            for selected period.
-
-                        </p>
-
-
-
-                        <p
-                        className="
-                        text-sm
-                        mt-2
-                        "
-                        >
-
-                            Please ensure vital signs
-                            are recorded for this period.
-
-                        </p>
-
-
+                        No vital data available.
 
                     </div>
 
                 )
 
 
-
-
                 :
-
 
 
                 (
 
                     <div
+
                     className="
-                    grid
-                    grid-cols-1
-                    gap-6
+                    space-y-6
                     "
+
                     >
 
 
 
-                        {
-                            (
-                            metric==="all"
-                            ||
-                            metric==="temperature"
-                            )
-                            &&
-
-
-                            <TrendChart
-
-                                title="Temperature Trend (°C)"
-
-                                dataKey="temperature"
-
-                                unit=" °C"
-
-                            />
-
-                        }
 
 
 
+                    {/* ALL VITALS */}
 
 
 
+                    {
+                        metric==="all"
 
-                        {
-                            (
-                            metric==="all"
-                            ||
-                            metric==="oxygen"
-                            )
-                            &&
+                        &&
 
 
-                            <TrendChart
+                        <>
 
-                                title="Oxygen Saturation Trend (%)"
 
-                                dataKey="oxygen_level"
 
-                                unit=" %"
+                        <TrendChart
 
-                            />
+                        title="Temperature Trend (°C)"
 
-                        }
+                        dataKey="temperature"
+
+                        unit=" °C"
+
+                        />
 
 
 
@@ -1065,27 +1334,29 @@ export default function VitalMonitoringCard({
 
 
 
+                        <TrendChart
 
-                        {
-                            (
-                            metric==="all"
-                            ||
-                            metric==="glucose"
-                            )
-                            &&
+                        title="Oxygen Level Trend (%)"
+
+                        dataKey="oxygen_level"
+
+                        unit=" %"
+
+                        />
 
 
-                            <TrendChart
 
-                                title="Blood Glucose Trend"
 
-                                dataKey="blood_glucose"
 
-                                unit=""
 
-                            />
 
-                        }
+                        <TrendChart
+
+                        title="Blood Glucose Trend"
+
+                        dataKey="blood_glucose"
+
+                        />
 
 
 
@@ -1094,148 +1365,471 @@ export default function VitalMonitoringCard({
 
 
 
-                        {
-                            (
-                            metric==="all"
-                            ||
-                            metric==="heart_rate"
-                            )
-                            &&
+                        <TrendChart
+
+                        title="Heart Rate Trend (bpm)"
+
+                        dataKey="heart_rate"
+
+                        unit=" bpm"
+
+                        />
 
 
-                            <TrendChart
-
-                                title="Heart Rate Trend (bpm)"
-
-                                dataKey="heart_rate"
-
-                                unit=" bpm"
-
-                            />
-
-                        }
 
 
-                        {
-                                metric==="all"
-                                &&
 
 
-                                <div
-                                className="
-                                bg-gray-50
-                                rounded-xl
-                                p-5
-                                border
-                                "
+
+
+
+                        <div
+
+                        className="
+                        bg-gray-50
+                        rounded-xl
+                        p-5
+                        border
+                        "
+
+                        >
+
+
+
+                            <h3
+
+                            className="
+                            text-lg
+                            font-bold
+                            text-gray-800
+                            mb-4
+                            "
+
+                            >
+
+                                Blood Pressure Trend (mmHg)
+
+                            </h3>
+
+
+
+
+
+                            <ResponsiveContainer
+
+                            width="100%"
+
+                            height={280}
+
+                            >
+
+
+
+                                <LineChart
+
+                                data={chartData}
+
                                 >
 
 
-                                    <h3
-                                    className="
-                                    text-lg
-                                    font-bold
-                                    text-gray-800
-                                    mb-4
-                                    "
-                                    >
 
-                                        Blood Pressure Trend (mmHg)
+                                    <CartesianGrid
 
-                                    </h3>
+                                    strokeDasharray="3 3"
+
+                                    />
 
 
 
 
 
-                                    <ResponsiveContainer
-                                        width="100%"
-                                        height={280}
-                                    >
+                                    <XAxis
 
+                                    dataKey={
+                                        period==="today"
+                                        ||
+                                        period==="24hours"
+                                        ?
+                                        "time"
+                                        :
+                                        "date"
+                                    }
 
-                                        <LineChart
-                                            data={chartData}
-                                        >
-
-
-                                            <CartesianGrid
-                                            strokeDasharray="3 3"
-                                            />
-
-
-
-                                            <XAxis
-
-                                                dataKey={
-                                                    getXAxisKey()
-                                                }
-
-                                            />
-
-
-
-                                            <YAxis />
-
-
-
-                                            <Tooltip />
+                                    />
 
 
 
 
 
-                                            <Line
-
-                                                type="monotone"
-
-                                                dataKey="blood_pressure_systolic"
-
-                                                name="Systolic"
-
-                                                strokeWidth={3}
-
-                                                dot={true}
-
-                                            />
+                                    <YAxis />
 
 
 
 
 
-                                            <Line
-
-                                                type="monotone"
-
-                                                dataKey="blood_pressure_diastolic"
-
-                                                name="Diastolic"
-
-                                                strokeWidth={3}
-
-                                                dot={true}
-
-                                            />
+                                    <Tooltip />
 
 
 
-                                        </LineChart>
 
 
-                                    </ResponsiveContainer>
+                                    <Legend />
 
 
 
-                                </div>
 
 
-                            }
 
+
+                                    <Line
+
+                                    type="monotone"
+
+                                    dataKey="blood_pressure_systolic"
+
+                                    name="Systolic BP"
+
+                                    strokeWidth={3}
+
+                                    dot={true}
+
+                                    />
+
+
+
+
+
+
+
+
+                                    <Line
+
+                                    type="monotone"
+
+                                    dataKey="blood_pressure_diastolic"
+
+                                    name="Diastolic BP"
+
+                                    strokeWidth={3}
+
+                                    dot={true}
+
+                                    />
+
+
+
+
+                                </LineChart>
+
+
+                            </ResponsiveContainer>
+
+
+
+                        </div>
+
+
+
+
+                        </>
+
+                    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    {/* TEMPERATURE */}
+
+
+
+                    {
+                        metric==="temperature"
+
+                        &&
+
+
+                        <TrendChart
+
+                        title="Temperature Trend (°C)"
+
+                        dataKey="temperature"
+
+                        unit=" °C"
+
+                        />
+
+                    }
+
+
+
+
+
+
+
+
+
+                    {/* OXYGEN */}
+
+
+
+                    {
+                        metric==="oxygen"
+
+                        &&
+
+
+                        <TrendChart
+
+                        title="Oxygen Level Trend (%)"
+
+                        dataKey="oxygen_level"
+
+                        unit=" %"
+
+                        />
+
+                    }
+
+
+
+
+
+
+
+
+
+                    {/* GLUCOSE */}
+
+
+
+                    {
+                        metric==="glucose"
+
+                        &&
+
+
+                        <TrendChart
+
+                        title="Blood Glucose Trend"
+
+                        dataKey="blood_glucose"
+
+                        />
+
+                    }
+
+
+
+
+
+
+
+
+
+                    {/* HEART RATE */}
+
+
+
+                    {
+                        metric==="heart_rate"
+
+                        &&
+
+
+                        <TrendChart
+
+                        title="Heart Rate Trend (bpm)"
+
+                        dataKey="heart_rate"
+
+                        unit=" bpm"
+
+                        />
+
+                    }
+
+
+
+
+
+
+
+
+
+                    {/* BLOOD PRESSURE */}
+
+
+
+                    {
+                        metric==="blood_pressure"
+
+                        &&
+
+
+                        <div
+
+                        className="
+                        bg-gray-50
+                        rounded-xl
+                        p-5
+                        border
+                        "
+
+                        >
+
+
+
+                            <h3
+
+                            className="
+                            text-lg
+                            font-bold
+                            text-gray-800
+                            mb-4
+                            "
+
+                            >
+
+                                Blood Pressure Trend (mmHg)
+
+                            </h3>
+
+
+
+
+
+
+
+                            <ResponsiveContainer
+
+                            width="100%"
+
+                            height={280}
+
+                            >
+
+
+
+                                <LineChart
+
+                                data={chartData}
+
+                                >
+
+
+
+                                    <CartesianGrid
+
+                                    strokeDasharray="3 3"
+
+                                    />
+
+
+
+
+
+                                    <XAxis
+
+                                    dataKey={
+                                        period==="today"
+                                        ||
+                                        period==="24hours"
+                                        ?
+                                        "time"
+                                        :
+                                        "date"
+                                    }
+
+                                    />
+
+
+
+
+
+                                    <YAxis />
+
+
+
+
+
+                                    <Tooltip />
+
+
+
+
+
+                                    <Legend />
+
+
+
+
+
+
+
+                                    <Line
+
+                                    type="monotone"
+
+                                    dataKey="blood_pressure_systolic"
+
+                                    name="Systolic BP"
+
+                                    strokeWidth={3}
+
+                                    dot={true}
+
+                                    />
+
+
+
+
+
+
+
+                                    <Line
+
+                                    type="monotone"
+
+                                    dataKey="blood_pressure_diastolic"
+
+                                    name="Diastolic BP"
+
+                                    strokeWidth={3}
+
+                                    dot={true}
+
+                                    />
+
+
+
+
+                                </LineChart>
+
+
+                            </ResponsiveContainer>
+
+
+
+
+                        </div>
+
+
+                    }
 
 
 
 
                     </div>
+
 
                 )
 
@@ -1245,11 +1839,15 @@ export default function VitalMonitoringCard({
 
 
 
-
-
         </div>
+
 
     );
 
 
 }
+
+
+
+
+

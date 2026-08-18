@@ -7,12 +7,16 @@ import ActiveAlertCard from "./ActiveAlertCard";
 import AIRiskCard from "./AIRiskCard";
 import VitalTrendChart from "./VitalTrendChart";
 import VitalMonitoringCard from "./VitalMonitoringCard";
+import AIClinicalSummaryCard from "./AIClinicalSummaryCard";
+import AINurseRecommendationCard from "./AINurseRecommendationCard";
+import AIClinicalTimeline from "./AIClinicalTimeline";
 
 
 function ClinicalDashboard({ residentId }) {
 
 
     const [data, setData] = useState(null);
+    const [activeTimelineAction,setActiveTimelineAction] = useState(null);
     const [loading, setLoading] = useState(true);
 
 
@@ -378,15 +382,60 @@ function ClinicalDashboard({ residentId }) {
 
             </div>
 
-            <VitalMonitoringCard
+            <AIClinicalSummaryCard
 
-                residentId={residentId}
+                healthTrend={
+                    data.health_trend
+                }
+
+
+                clinicalDecision={
+                    data.clinical_decision
+                }
+
+
+                alerts={
+                    activeAlerts
+                }
+
 
             />
 
 
+            <AINurseRecommendationCard
 
+                carePlan={
+                    data.care_plan
+                }
+
+            />
+
+
+            <AIClinicalTimeline
+                residentId={residentId}
+
+                onTimelineAction={
+                    setActiveTimelineAction
+                }
+            />
+
+
+
+            <VitalMonitoringCard
+
+                residentId={residentId}
+
+                activeAction={
+                    activeTimelineAction
+                }
+
+            />
+
+
+                    
         </div>
+
+        
 
     );
 

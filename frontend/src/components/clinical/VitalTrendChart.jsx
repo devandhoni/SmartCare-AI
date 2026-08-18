@@ -182,9 +182,9 @@ export default function VitalTrendChart({
 
 
             <h2 className="
+                !text-gray-900
                 text-xl
                 font-bold
-                text-gray-800
                 mb-6
             ">
 
