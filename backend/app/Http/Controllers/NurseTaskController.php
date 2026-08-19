@@ -576,8 +576,20 @@ class NurseTaskController extends Controller
 
 
             'event_date'=>
-                now()
+                now(),
 
+
+            'reviewed_by'=>
+                auth()->id(),
+
+
+            'reviewed_at'=>
+                now(),
+
+
+            'review_action'=>
+
+                'Nurse completed AI clinical intervention.'
 
         ]);
 
