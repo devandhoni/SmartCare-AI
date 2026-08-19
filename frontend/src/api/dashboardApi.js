@@ -2,6 +2,8 @@ import api from "../services/api";
 
 
 
+
+
 export const getAICommandCenter = async()=>{
 
 
@@ -20,12 +22,38 @@ export const getAICommandCenter = async()=>{
 
 
 
+
+
+
+
 export const getAIAlerts = async()=>{
 
 
     const response =
     await api.get(
         "/ai-alerts"
+    );
+
+
+    return response.data;
+
+
+};
+
+
+
+
+
+
+
+
+
+export const getNurseTasks = async()=>{
+
+
+    const response =
+    await api.get(
+        "/nurse/tasks"
     );
 
 

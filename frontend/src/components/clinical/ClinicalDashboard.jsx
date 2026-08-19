@@ -10,6 +10,8 @@ import VitalMonitoringCard from "./VitalMonitoringCard";
 import AIClinicalSummaryCard from "./AIClinicalSummaryCard";
 import AINurseRecommendationCard from "./AINurseRecommendationCard";
 import AIClinicalTimeline from "./AIClinicalTimeline";
+import AITrendInterpretationCard from "./AITrendInterpretationCard";
+import AINursingPriorityCard from "./AINursingPriorityCard";
 
 
 function ClinicalDashboard({ residentId }) {
@@ -398,6 +400,23 @@ function ClinicalDashboard({ residentId }) {
                     activeAlerts
                 }
 
+
+            />
+
+
+            <AITrendInterpretationCard
+
+                healthTrend={
+                    data.health_trend
+                }
+
+            />
+
+            <AINursingPriorityCard
+
+                healthTrend={
+                    data.health_trend
+                }
 
             />
 

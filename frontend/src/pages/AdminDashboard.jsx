@@ -2,28 +2,42 @@ import { useEffect, useState } from "react";
 
 import { 
     getAICommandCenter,
-    getAIAlerts
+    getAIAlerts,
+    getNurseTasks
 } from "../api/dashboardApi";
+
 
 import KPICard from "../components/KPICard";
 import PriorityAttention from "../components/PriorityAttention";
 import ClinicalPerformance from "../components/ClinicalPerformance";
 import AIAlertTable from "../components/AIAlertTable";
 import NurseTaskTable from "../components/NurseTaskTable";
+import CriticalResidentTable from "../components/CriticalResidentTable";
+import AIAlertSummaryCard from "../components/AIAlertSummaryCard";
+import LatestAIDecisionCard from "../components/LatestAIDecisionCard";
+
 
 
 function AdminDashboard() {
+
 
 
     const [dashboard,setDashboard] = useState(null);
 
     const [alerts,setAlerts] = useState([]);
 
-    const [tasks, setTasks] = useState([]);
+    const [tasks,setTasks] = useState([]);
+
+    const [lastUpdated,setLastUpdated] = useState(null);
+
+    const [refreshing,setRefreshing] = useState(false);
 
 
 
-    useEffect(() => {
+
+
+
+    useEffect(()=>{
 
         loadDashboard();
 
@@ -33,44 +47,111 @@ function AdminDashboard() {
 
 
 
-    const loadDashboard = async () => {
-
-    try {
-
-        const data =
-            await getAICommandCenter();
-
-        setDashboard(
-            data.data
-        );
 
 
-        const alertResponse =
-            await getAIAlerts();
-
-        setAlerts(
-            alertResponse.data.alerts
-        );
+    const loadDashboard = async()=>{
 
 
-        const taskResponse =
-            await getNurseTasks();
+        try{
 
-        setTasks(
-            taskResponse.data
-        );
 
-    }
-    catch(error) {
+            setRefreshing(true);
 
-        console.error(
-            "Dashboard loading error:",
-            error
-        );
 
-    }
 
-};
+            const data =
+                await getAICommandCenter();
+
+
+
+            console.log(
+                "ADMIN COMMAND CENTER FULL:",
+                JSON.stringify(data,null,2)
+            );
+
+
+
+            setDashboard(
+                data.data
+            );
+
+
+
+
+
+
+
+            const alertResponse =
+                await getAIAlerts();
+
+
+
+            console.log(
+                "ADMIN AI ALERT DATA:",
+                JSON.stringify(alertResponse,null,2)
+            );
+
+
+
+            setAlerts(
+                alertResponse?.data?.alerts ?? []
+            );
+
+
+
+
+
+
+
+            const taskResponse =
+                await getNurseTasks();
+
+
+
+            setTasks(
+                taskResponse?.data ?? []
+            );
+
+
+
+
+
+
+
+
+            setLastUpdated(
+                new Date()
+            );
+
+
+
+        }
+
+        catch(error){
+
+
+            console.error(
+                "Dashboard loading error:",
+                error
+            );
+
+
+        }
+
+
+        finally{
+
+
+            setRefreshing(false);
+
+
+        }
+
+
+    };
+
+
+
 
 
 
@@ -80,20 +161,33 @@ function AdminDashboard() {
     if(!dashboard)
     {
 
+
         return (
 
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="
+            flex
+            min-h-screen
+            items-center
+            justify-center
+            ">
 
-                <p className="text-lg font-semibold text-slate-600">
+
+                <p className="
+                text-lg
+                font-semibold
+                text-slate-600
+                ">
 
                     Loading SmartCare AI Dashboard...
 
                 </p>
 
 
+
             </div>
 
         );
+
 
     }
 
@@ -103,29 +197,150 @@ function AdminDashboard() {
 
 
 
+
+
     return (
+
 
         <div className="space-y-8">
 
 
 
-            {/* Page Title */}
-
-            <div>
 
 
-                <h1 className="text-3xl font-bold text-slate-800">
+            {/* HEADER */}
 
-                    SmartCare AI Command Center
+            <div
 
-                </h1>
+            className="
+            flex
+            justify-between
+            items-start
+            "
+
+            >
 
 
-                <p className="mt-2 text-slate-500">
+                <div>
 
-                    Clinical intelligence monitoring and decision support dashboard
 
-                </p>
+                    <h1
+
+                    className="
+                    text-3xl
+                    font-bold
+                    text-slate-800
+                    "
+
+                    >
+
+                        SmartCare AI Command Center
+
+                    </h1>
+
+
+
+                    <p
+
+                    className="
+                    mt-2
+                    text-slate-500
+                    "
+
+                    >
+
+                        Clinical intelligence monitoring and decision support dashboard
+
+                    </p>
+
+
+
+
+
+
+                    {
+                        lastUpdated &&
+
+
+                        <p
+
+                        className="
+                        mt-3
+                        text-sm
+                        font-semibold
+                        text-green-600
+                        "
+
+                        >
+
+                            🟢 Last Updated:
+
+                            {" "}
+
+                            {
+                                lastUpdated.toLocaleString()
+                            }
+
+
+                        </p>
+
+                    }
+
+
+
+                </div>
+
+
+
+
+
+
+
+                <button
+
+
+                onClick={
+                    loadDashboard
+                }
+
+
+                disabled={
+                    refreshing
+                }
+
+
+                className="
+                rounded-lg
+                bg-blue-600
+                px-5
+                py-3
+                font-semibold
+                text-white
+                hover:bg-blue-700
+                disabled:opacity-50
+                "
+
+                >
+
+
+                    {
+
+                    refreshing
+
+                    ?
+
+                    "Refreshing..."
+
+                    :
+
+                    "🔄 Refresh Intelligence"
+
+                    }
+
+
+                </button>
+
+
 
 
             </div>
@@ -136,10 +351,19 @@ function AdminDashboard() {
 
 
 
-            {/* KPI Cards */}
 
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+
+
+            {/* KPI CARDS */}
+
+
+            <div className="
+            grid
+            grid-cols-1
+            gap-6
+            md:grid-cols-3
+            ">
 
 
 
@@ -150,7 +374,7 @@ function AdminDashboard() {
                     value={
                         dashboard
                         .clinical_overview
-                        .total_residents
+                        ?.total_residents ?? 0
                     }
 
                     icon="👥"
@@ -170,7 +394,7 @@ function AdminDashboard() {
                     value={
                         dashboard
                         .clinical_overview
-                        .critical_cases
+                        ?.critical_cases ?? 0
                     }
 
                     icon="🚨"
@@ -190,7 +414,7 @@ function AdminDashboard() {
                     value={
                         dashboard
                         .clinical_overview
-                        .active_alerts
+                        ?.active_alerts ?? 0
                     }
 
                     icon="🔔"
@@ -210,7 +434,7 @@ function AdminDashboard() {
                     value={
                         dashboard
                         .ai_performance
-                        .predictions_generated
+                        ?.predictions_generated ?? 0
                     }
 
                     icon="🤖"
@@ -230,7 +454,7 @@ function AdminDashboard() {
                     value={
                         dashboard
                         .ai_performance
-                        .high_risk_predictions
+                        ?.high_risk_predictions ?? 0
                     }
 
                     icon="⚠️"
@@ -250,8 +474,8 @@ function AdminDashboard() {
                     value={
                         dashboard
                         .clinical_performance
-                        .nursing_metrics
-                        .pending_tasks
+                        ?.nursing_metrics
+                        ?.pending_tasks ?? 0
                     }
 
                     icon="🩺"
@@ -272,13 +496,78 @@ function AdminDashboard() {
 
 
 
-            {/* AI System Status */}
+            {/* CRITICAL RESIDENT RANKING */}
 
 
-            <div className="rounded-xl bg-white p-6 shadow">
+            <CriticalResidentTable
+
+                residents={
+                    dashboard.priority_attention ?? []
+                }
+
+            />
 
 
-                <h2 className="text-xl font-bold text-slate-800">
+
+
+
+
+
+            {/* LATEST AI DECISION */}
+
+
+            <LatestAIDecisionCard
+
+                decision={
+                    dashboard.latest_ai_decision
+                }
+
+            />
+
+
+
+
+
+
+
+            {/* AI ALERT INTELLIGENCE */}
+
+
+            <AIAlertSummaryCard
+
+                alerts={
+                    alerts
+                }
+
+            />
+
+
+
+
+
+
+
+
+
+
+
+            {/* AI SYSTEM STATUS */}
+
+
+            <div className="
+            rounded-xl
+            bg-white
+            p-6
+            shadow
+            ">
+
+
+
+                <h2 className="
+                text-xl
+                font-bold
+                text-slate-800
+                ">
 
                     AI System Status
 
@@ -286,55 +575,56 @@ function AdminDashboard() {
 
 
 
-                <div className="mt-4 flex items-center gap-3">
+
+                <div className="
+                mt-4
+                flex
+                items-center
+                gap-3
+                ">
 
 
                     <div
 
-                        className={`h-3 w-3 rounded-full ${
-                            
-                            dashboard.system_status === "ACTIVE"
+                    className={`
 
-                            ?
+                    h-3
+                    w-3
+                    rounded-full
 
-                            "bg-green-500"
+                    ${
+                    dashboard.system_status === "ACTIVE"
 
-                            :
+                    ?
 
-                            "bg-orange-500"
+                    "bg-green-500"
 
-                        }`}
+                    :
+
+                    "bg-orange-500"
+
+                    }
+
+                    `}
 
                     ></div>
 
 
 
 
-                    <p
+                    <p className="
+                    font-semibold
+                    ">
 
-                    className={`font-semibold ${
-                        
-                        dashboard.system_status === "ACTIVE"
-
-                        ?
-
-                        "text-green-600"
-
-                        :
-
-                        "text-orange-600"
-
-                    }`}
-
-                    >
-
-                        {dashboard.system_status}
+                        {
+                            dashboard.system_status
+                        }
 
                     </p>
 
 
-                </div>
 
+                </div>
 
 
             </div>
@@ -342,48 +632,115 @@ function AdminDashboard() {
 
 
 
-            {/* Priority Attention */}
+
+
+
+
+
+            {/* PRIORITY ATTENTION */}
+
 
             <PriorityAttention
 
                 alerts={
-                    dashboard.priority_attention
+                    dashboard.priority_attention ?? []
                 }
 
             />
 
 
-            {/* Clinical Performance */}
+
+
+
+
+
+
+
+
+            {/* CLINICAL PERFORMANCE */}
+
 
             <ClinicalPerformance
 
-            performance={
-            dashboard.clinical_performance
-            }
+                performance={
+                    dashboard.clinical_performance
+                }
 
             />
 
-            {/* AI Alerts Table */}
+
+
+
+
+
+
+
+
+            {/* AI ALERT TABLE */}
+
 
             <AIAlertTable
-            alerts={alerts}
-            onRefresh={loadDashboard}
+
+                alerts={
+                    alerts
+                }
+
+                onRefresh={
+                    loadDashboard
+                }
+
             />
 
-            {/* Nurse Tasks Table */}
+
+
+
+
+
+
+
+
+            {/* NURSE TASK TABLE */}
+
+
             <NurseTaskTable
-            tasks={tasks}
-            onRefresh={loadDashboard}
+
+                tasks={
+                    tasks
+                }
+
+                onRefresh={
+                    loadDashboard
+                }
+
             />
 
 
-            {/* Executive Summary */}
 
 
-            <div className="rounded-xl bg-white p-6 shadow">
 
 
-                <h2 className="text-xl font-bold text-slate-800">
+
+
+
+
+
+            {/* EXECUTIVE SUMMARY */}
+
+
+
+            <div className="
+            rounded-xl
+            bg-white
+            p-6
+            shadow
+            ">
+
+
+                <h2 className="
+                text-xl
+                font-bold
+                text-slate-800
+                ">
 
                     Executive Summary
 
@@ -391,13 +748,18 @@ function AdminDashboard() {
 
 
 
-                <p className="mt-4 text-slate-600">
+                <p className="
+                mt-4
+                text-slate-600
+                ">
+
 
                     {
                         dashboard
                         .executive_summary
-                        .executive_message
+                        ?.executive_message
                     }
+
 
                 </p>
 
@@ -410,7 +772,9 @@ function AdminDashboard() {
 
 
 
+
         </div>
+
 
     );
 

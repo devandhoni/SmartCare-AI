@@ -5,6 +5,11 @@ import {
     resolveAlert
 } from "../api/alertApi";
 
+import {
+    useNavigate
+} from "react-router-dom";
+
+
 
 
 function AIAlertTable({
@@ -13,8 +18,16 @@ function AIAlertTable({
 }) {
 
 
-    const [processingId, setProcessingId] =
+    const [processingId,setProcessingId] =
         useState(null);
+
+
+
+    const navigate = useNavigate();
+
+
+
+
 
 
 
@@ -90,6 +103,7 @@ function AIAlertTable({
 
 
 
+
         try{
 
 
@@ -116,7 +130,6 @@ function AIAlertTable({
                 "Resolve alert error:",
                 error
             );
-
 
 
             alert(
@@ -146,17 +159,56 @@ function AIAlertTable({
 
 
 
+    const handleViewClinical = (alert)=>{
+
+
+        if(
+            alert.resident_id
+        )
+        {
+
+            navigate(
+
+                `/residents/${alert.resident_id}/clinical-dashboard`
+
+            );
+
+        }
+
+    };
+
+
+
+
+
+
+
+
+
     return (
 
 
-        <div className="rounded-xl bg-white p-6 shadow">
+        <div className="
+        rounded-xl
+        bg-white
+        p-6
+        shadow
+        ">
 
 
 
-            <div className="flex items-center justify-between">
+            <div className="
+            flex
+            items-center
+            justify-between
+            ">
 
 
-                <h2 className="text-xl font-bold text-slate-800">
+                <h2 className="
+                text-xl
+                font-bold
+                text-slate-800
+                ">
 
                     🚨 Active AI Alerts
 
@@ -164,7 +216,16 @@ function AIAlertTable({
 
 
 
-                <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-600">
+
+                <span className="
+                rounded-full
+                bg-red-100
+                px-3
+                py-1
+                text-sm
+                font-semibold
+                text-red-600
+                ">
 
                     {alerts.length} Active
 
@@ -173,6 +234,9 @@ function AIAlertTable({
 
 
             </div>
+
+
+
 
 
 
@@ -188,7 +252,10 @@ function AIAlertTable({
 
                 (
 
-                    <p className="mt-5 text-slate-500">
+                    <p className="
+                    mt-5
+                    text-slate-500
+                    ">
 
                         No active AI alerts.
 
@@ -202,17 +269,28 @@ function AIAlertTable({
 
                 (
 
-                <div className="mt-5 overflow-x-auto">
+                <div className="
+                mt-5
+                overflow-x-auto
+                ">
 
 
-                    <table className="w-full">
+                    <table className="
+                    w-full
+                    ">
 
 
 
                         <thead>
 
 
-                            <tr className="border-b text-left text-sm text-slate-500">
+                            <tr className="
+                            border-b
+                            text-left
+                            text-sm
+                            text-slate-500
+                            ">
+
 
 
                                 <th className="p-3">
@@ -256,18 +334,27 @@ function AIAlertTable({
 
 
 
+
+
+
                         <tbody>
 
 
                         {
-                            alerts.map((alert)=>(
+                        alerts.map(
+
+                            (alert)=>(
 
 
                                 <tr
 
                                 key={alert.id}
 
-                                className="border-b hover:bg-slate-50"
+                                className="
+                                border-b
+                                hover:bg-slate-50
+                                "
+
 
                                 >
 
@@ -275,15 +362,23 @@ function AIAlertTable({
 
 
 
-                                    <td className="p-3 font-semibold">
+                                    <td className="
+                                    p-3
+                                    font-semibold
+                                    ">
 
                                         {
                                             alert.resident?.full_name
                                             ??
+                                            alert.resident_name
+                                            ??
                                             "Unknown"
                                         }
 
+
                                     </td>
+
+
 
 
 
@@ -304,14 +399,20 @@ function AIAlertTable({
 
 
 
+
                                     <td className="p-3">
 
 
                                         <span
 
                                         className={`
-                                        
-                                        rounded-full px-3 py-1 text-xs font-bold
+
+                                        rounded-full
+                                        px-3
+                                        py-1
+                                        text-xs
+                                        font-bold
+
 
                                         ${
                                             alert.severity === "CRITICAL"
@@ -330,11 +431,9 @@ function AIAlertTable({
 
                                         >
 
-
                                             {
                                                 alert.severity
                                             }
-
 
                                         </span>
 
@@ -371,39 +470,56 @@ function AIAlertTable({
                                     <td className="p-3">
 
 
-                                        {
+                                    {
 
-                                            alert.acknowledged_at
-
-
-                                            ?
+                                    alert.acknowledged_at
 
 
-                                            (
-
-                                                <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-700">
-
-                                                    ACKNOWLEDGED
-
-                                                </span>
-
-                                            )
+                                    ?
 
 
-                                            :
+                                    (
+
+                                    <span className="
+                                    rounded-full
+                                    bg-yellow-100
+                                    px-3
+                                    py-1
+                                    text-xs
+                                    font-bold
+                                    text-yellow-700
+                                    ">
+
+                                        ACKNOWLEDGED
+
+                                    </span>
+
+                                    )
 
 
-                                            (
+                                    :
 
-                                                <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
 
-                                                    OPEN
+                                    (
 
-                                                </span>
+                                    <span className="
+                                    rounded-full
+                                    bg-red-100
+                                    px-3
+                                    py-1
+                                    text-xs
+                                    font-bold
+                                    text-red-700
+                                    ">
 
-                                            )
+                                        OPEN
 
-                                        }
+                                    </span>
+
+
+                                    )
+
+                                    }
 
 
 
@@ -417,59 +533,45 @@ function AIAlertTable({
 
 
 
-                                    <td className="p-3">
-
-
-                                        <div className="flex gap-2">
-
-
+                                    <td className="
+                                    p-3
+                                    ">
 
 
 
-                                            <button
-
-
-                                            onClick={()=>
-                                                handleAcknowledge(
-                                                    alert.id
-                                                )
-                                            }
-
-
-                                            disabled={
-
-                                                processingId === alert.id
-
-                                                ||
-
-                                                alert.acknowledged_at
-
-                                            }
-
-
-                                            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-
-
-                                            >
-
-
-                                                {
-
-                                                    alert.acknowledged_at
-
-                                                    ?
-
-                                                    "Acknowledged ✓"
-
-                                                    :
-
-                                                    "Acknowledge"
-
-                                                }
+                                    <div className="
+                                    flex
+                                    flex-wrap
+                                    gap-2
+                                    ">
 
 
 
-                                            </button>
+                                    <button
+
+                                    onClick={()=>
+                                        handleViewClinical(
+                                            alert
+                                        )
+                                    }
+
+
+                                    className="
+                                    rounded-lg
+                                    bg-blue-600
+                                    px-3
+                                    py-2
+                                    text-sm
+                                    font-semibold
+                                    text-white
+                                    hover:bg-blue-700
+                                    "
+
+                                    >
+
+                                        View Clinical
+
+                                    </button>
 
 
 
@@ -478,38 +580,108 @@ function AIAlertTable({
 
 
 
-
-                                            <button
-
-
-                                            onClick={()=>
-                                                handleResolve(
-                                                    alert.id
-                                                )
-                                            }
+                                    <button
 
 
-                                            disabled={
-                                                processingId === alert.id
-                                            }
+                                    onClick={()=>
+                                        handleAcknowledge(
+                                            alert.id
+                                        )
+                                    }
 
 
-                                            className="rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+                                    disabled={
+
+                                        processingId === alert.id
+
+                                        ||
+
+                                        alert.acknowledged_at
+
+                                    }
 
 
-                                            >
+                                    className="
+                                    rounded-lg
+                                    bg-indigo-600
+                                    px-3
+                                    py-2
+                                    text-sm
+                                    font-semibold
+                                    text-white
+                                    hover:bg-indigo-700
+                                    disabled:opacity-50
+                                    "
 
 
-                                                Resolve
+                                    >
 
 
-                                            </button>
+                                        {
+
+                                        alert.acknowledged_at
+
+                                        ?
+
+                                        "Acknowledged ✓"
+
+                                        :
+
+                                        "Acknowledge"
+
+                                        }
+
+
+                                    </button>
 
 
 
 
 
-                                        </div>
+
+
+
+
+                                    <button
+
+
+                                    onClick={()=>
+                                        handleResolve(
+                                            alert.id
+                                        )
+                                    }
+
+
+                                    disabled={
+                                        processingId === alert.id
+                                    }
+
+
+                                    className="
+                                    rounded-lg
+                                    bg-green-600
+                                    px-3
+                                    py-2
+                                    text-sm
+                                    font-semibold
+                                    text-white
+                                    hover:bg-green-700
+                                    disabled:opacity-50
+                                    "
+
+
+                                    >
+
+                                        Resolve
+
+
+                                    </button>
+
+
+
+
+                                    </div>
+
 
 
 
@@ -522,7 +694,10 @@ function AIAlertTable({
                                 </tr>
 
 
-                            ))
+                            )
+
+                        )
+
                         }
 
 

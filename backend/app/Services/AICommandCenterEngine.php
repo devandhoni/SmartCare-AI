@@ -39,6 +39,8 @@ class AICommandCenterEngine
 
 
 
+
+
     /*
     |--------------------------------------------------------------------------
     | Generate AI Command Center
@@ -50,6 +52,7 @@ class AICommandCenterEngine
     {
 
 
+
         /*
         |--------------------------------------------------------------------------
         | Executive Summary
@@ -59,6 +62,9 @@ class AICommandCenterEngine
 
         $summary =
             $this->executiveSummary->analyze();
+
+
+
 
 
 
@@ -81,6 +87,10 @@ class AICommandCenterEngine
 
 
 
+
+
+
+
         /*
         |--------------------------------------------------------------------------
         | Priority Resident Monitoring
@@ -93,12 +103,20 @@ class AICommandCenterEngine
 
 
         $criticalResidents =
+
             HealthRiskScore::where(
                 'risk_level',
                 'CRITICAL'
             )
+
             ->with('resident')
+
+            ->orderByDesc(
+                'risk_score'
+            )
+
             ->get();
+
 
 
 
@@ -128,6 +146,10 @@ class AICommandCenterEngine
                     'CRITICAL',
 
 
+                    'risk_score'=>
+                    $risk->risk_score,
+
+
                     'recommendation'=>
                     'Immediate clinical monitoring required.'
 
@@ -140,6 +162,7 @@ class AICommandCenterEngine
 
 
         }
+
 
 
 
@@ -173,28 +196,171 @@ class AICommandCenterEngine
 
         /*
         |--------------------------------------------------------------------------
+        | Latest AI Decision
+        |--------------------------------------------------------------------------
+        */
+
+
+        $latestAlert =
+
+            AiAlert::with('resident')
+
+            ->where(
+                'status',
+                'OPEN'
+            )
+
+            ->where(
+                'severity',
+                'CRITICAL'
+            )
+
+            ->latest(
+                'created_on'
+            )
+
+            ->first();
+
+
+
+
+
+        $latestAIDecision = null;
+
+
+
+
+
+        if($latestAlert)
+        {
+
+
+            $riskFactors = [];
+
+
+
+            $message = 
+                $latestAlert->message;
+
+
+
+            if($message)
+            {
+
+
+                $parts = explode(
+                    ',',
+                    $message
+                );
+
+
+                foreach($parts as $part)
+                {
+
+
+                    $riskFactors[] =
+                        trim($part);
+
+
+                }
+
+
+            }
+
+
+
+
+
+
+            $latestAIDecision = [
+
+
+                'resident_id'=>
+                $latestAlert->resident_id,
+
+
+
+                'resident_name'=>
+                $latestAlert->resident
+                ?
+                $latestAlert->resident->full_name
+                :
+                'Unknown',
+
+
+
+                'priority'=>
+                $latestAlert->severity,
+
+
+
+                'decision_score'=>
+                (float)
+                $latestAlert->ai_confidence,
+
+
+
+                'risk_factors'=>
+                $riskFactors,
+
+
+
+                'generated_at'=>
+                $latestAlert->created_at
+
+
+
+            ];
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
         | System Health Status
         |--------------------------------------------------------------------------
         */
 
 
         $activeAlerts =
+
             AiAlert::where(
                 'status',
                 'OPEN'
             )
+
             ->count();
 
 
 
 
 
+
+
         $status =
+
             $activeAlerts > 0
+
             ?
+
             'ATTENTION REQUIRED'
+
             :
+
             'STABLE';
+
+
+
+
 
 
 
@@ -215,35 +381,57 @@ class AICommandCenterEngine
 
 
 
-            'system_status'=>$status,
+            'system_status'=>
+            $status,
 
 
 
-            'executive_summary'=>$summary,
+
+
+            'executive_summary'=>
+            $summary,
+
+
+
+
 
 
 
             'clinical_overview'=>[
 
 
+
                 'total_residents'=>
                 Resident::count(),
 
 
+
                 'critical_cases'=>
+
                 HealthRiskScore::where(
                     'risk_level',
                     'CRITICAL'
                 )
-                ->distinct('resident_id')
-                ->count('resident_id'),
+
+                ->distinct(
+                    'resident_id'
+                )
+
+                ->count(
+                    'resident_id'
+                ),
+
 
 
                 'active_alerts'=>
                 $activeAlerts
 
 
+
             ],
+
+
+
 
 
 
@@ -253,11 +441,14 @@ class AICommandCenterEngine
             'ai_performance'=>[
 
 
+
                 'predictions_generated'=>
                 HealthPrediction::count(),
 
 
+
                 'high_risk_predictions'=>
+
                 HealthPrediction::whereIn(
                     'risk_level',
                     [
@@ -265,10 +456,15 @@ class AICommandCenterEngine
                         'CRITICAL'
                     ]
                 )
+
                 ->count()
 
 
+
             ],
+
+
+
 
 
 
@@ -283,8 +479,25 @@ class AICommandCenterEngine
 
 
 
+
+
             'priority_attention'=>
-            $priorityResidents
+            $priorityResidents,
+
+
+
+
+
+
+
+
+            /*
+            | NEW
+            | Latest AI Clinical Decision
+            */
+
+            'latest_ai_decision'=>
+            $latestAIDecision
 
 
 
