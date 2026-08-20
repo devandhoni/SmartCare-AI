@@ -15,6 +15,7 @@ import NurseTaskTable from "../components/NurseTaskTable";
 import CriticalResidentTable from "../components/CriticalResidentTable";
 import AIAlertSummaryCard from "../components/AIAlertSummaryCard";
 import LatestAIDecisionCard from "../components/LatestAIDecisionCard";
+import AIOutcomePerformanceCard from "../components/AIOutcomePerformanceCard";
 
 
 
@@ -525,7 +526,16 @@ function AdminDashboard() {
             />
 
 
+            
+            {/* AI Outcome Performance Card */}
 
+            <AIOutcomePerformanceCard
+
+                performance={
+                    dashboard.ai_outcome_performance
+                }
+
+            />
 
 
 
