@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use Illuminate\Http\Request;
 
 use App\Models\Resident;
@@ -20,18 +19,18 @@ use App\Services\ClinicalDecisionEngine;
 use App\Services\AIMonitoringAnalyzer;
 use App\Services\AILearningAnalyzer;
 use App\Services\PredictiveDeteriorationService;
-
+use App\Services\AICareRecommendationEngine;
+use App\Services\AICareWorkflowPreparationEngine;
+use App\Services\AICareWorkflowOutcomeIntelligence;
+use App\Services\AICareRecommendationLearningEngine;
 
 class ClinicalDashboardController extends Controller
 {
-
-
     /*
     |--------------------------------------------------------------------------
     | AI Clinical Decision Support Dashboard
     |--------------------------------------------------------------------------
     */
-
 
     public function show(
         $id,
@@ -41,17 +40,20 @@ class ClinicalDashboardController extends Controller
         ClinicalDecisionEngine $clinicalDecisionEngine,
         AIMonitoringAnalyzer $aiMonitoringAnalyzer,
         AILearningAnalyzer $aiLearningAnalyzer,
-        PredictiveDeteriorationService $predictiveDeteriorationService
-    )
-    {
+        PredictiveDeteriorationService $predictiveDeteriorationService,
+        AICareRecommendationEngine $aiCareRecommendationEngine,
+        AICareWorkflowPreparationEngine $careWorkflowPreparationEngine,
+        AICareWorkflowOutcomeIntelligence $careWorkflowOutcomeIntelligence,
+        AICareRecommendationLearningEngine $careRecommendationLearningEngine
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Resident
+        |--------------------------------------------------------------------------
+        */
 
-
-        $resident = Resident::findOrFail($id);
-
-
-
-
-
+        $resident =
+            Resident::findOrFail($id);
 
 
         /*
@@ -60,18 +62,15 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $riskScore = HealthRiskScore::where(
+        $riskScore =
+            HealthRiskScore::where(
                 'resident_id',
                 $id
             )
-            ->latest('created_on')
+            ->latest(
+                'created_on'
+            )
             ->first();
-
-
-
-
-
 
 
         /*
@@ -80,19 +79,15 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $latestVital = VitalSign::where(
+        $latestVital =
+            VitalSign::where(
                 'resident_id',
                 $id
             )
-            ->latest('created_on')
+            ->latest(
+                'created_on'
+            )
             ->first();
-
-
-
-
-
-
 
 
         /*
@@ -101,9 +96,10 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $healthTrend = $healthTrendAnalyzer->analyze($id);
-
+        $healthTrend =
+            $healthTrendAnalyzer->analyze(
+                $id
+            );
 
 
         /*
@@ -112,21 +108,114 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $aiLearning = $aiLearningAnalyzer->analyze($id);
-
-
+        $aiLearning =
+            $aiLearningAnalyzer->analyze(
+                $id
+            );
 
 
         /*
         |--------------------------------------------------------------------------
+        | Step 51
         | Predictive Intelligence
         |--------------------------------------------------------------------------
         */
 
-        $predictiveIntelligence = $predictiveDeteriorationService->predict($id);
+        $predictiveIntelligence =
+            $predictiveDeteriorationService->predict(
+                $id
+            );
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Step 52.1
+        | AI Care Recommendation Intelligence
+        |--------------------------------------------------------------------------
+        */
+
+        $careRecommendationIntelligence =
+            $aiCareRecommendationEngine->analyze(
+                (int) $id
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Step 52.5
+        | AI Care Workflow Preparation
+        |--------------------------------------------------------------------------
+        |
+        | Converts execution-ready recommendations into workflow proposals.
+        | This does NOT automatically create clinical tasks.
+        |
+        */
+
+        $careWorkflowPreparation =
+            $careWorkflowPreparationEngine->prepare(
+                $careRecommendationIntelligence
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Step 52.9
+        | AI Care Workflow Outcome Intelligence
+        |--------------------------------------------------------------------------
+        |
+        | Evaluates completed AI-supported care workflows against linked
+        | clinical outcomes.
+        |
+        | AI Recommendation
+        |      ↓
+        | Workflow Proposal
+        |      ↓
+        | Human Approval
+        |      ↓
+        | Operational Nurse Task
+        |      ↓
+        | Task Completion
+        |      ↓
+        | Clinical Outcome
+        |      ↓
+        | Workflow Effectiveness Intelligence
+        |
+        */
+
+        $careWorkflowOutcome =
+            $careWorkflowOutcomeIntelligence->analyze(
+                (int) $id
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Step 52.10
+        | AI Care Recommendation Effectiveness Learning
+        |--------------------------------------------------------------------------
+        |
+        | Learns from completed AI-supported care workflows and their
+        | associated clinical outcomes.
+        |
+        | IMPORTANT:
+        |
+        | This learning layer is advisory only.
+        |
+        | It does NOT automatically:
+        |
+        | - change clinical recommendation rules
+        | - modify recommendation priorities
+        | - suppress recommendations
+        | - execute care actions
+        |
+        | Human validation remains required.
+        |
+        */
+
+        $careRecommendationLearning =
+            $careRecommendationLearningEngine->analyze(
+                (int) $id
+            );
 
 
         /*
@@ -135,9 +224,10 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $healthJourney = $healthJourneyAnalyzer->analyze($id);
-
+        $healthJourney =
+            $healthJourneyAnalyzer->analyze(
+                $id
+            );
 
 
         /*
@@ -147,16 +237,21 @@ class ClinicalDashboardController extends Controller
         */
 
         $aiMonitoring =
+            $aiMonitoringAnalyzer->analyze(
+                $id
+            );
 
-            $aiMonitoringAnalyzer->analyze($id);
 
         /*
         |--------------------------------------------------------------------------
-        | AI Personalized Care Plan
+        | Existing AI Personalized Care Plan
         |--------------------------------------------------------------------------
         */
 
-        $carePlan = $careRecommendationEngine->generate($id);
+        $carePlan =
+            $careRecommendationEngine->generate(
+                $id
+            );
 
 
         /*
@@ -165,11 +260,10 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
         $clinicalDecision =
-
-            $clinicalDecisionEngine
-            ->analyze($id);
+            $clinicalDecisionEngine->analyze(
+                $id
+            );
 
 
         /*
@@ -178,8 +272,8 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $alerts = AiAlert::where(
+        $alerts =
+            AiAlert::where(
                 'resident_id',
                 $id
             )
@@ -187,14 +281,10 @@ class ClinicalDashboardController extends Controller
                 'status',
                 'OPEN'
             )
-            ->latest('created_on')
+            ->latest(
+                'created_on'
+            )
             ->get();
-
-
-
-
-
-
 
 
         /*
@@ -203,20 +293,16 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $predictions = HealthPrediction::where(
+        $predictions =
+            HealthPrediction::where(
                 'resident_id',
                 $id
             )
-            ->latest('created_on')
+            ->latest(
+                'created_on'
+            )
             ->limit(10)
             ->get();
-
-
-
-
-
-
 
 
         /*
@@ -225,20 +311,16 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $recommendations = ClinicalRecommendation::where(
+        $recommendations =
+            ClinicalRecommendation::where(
                 'resident_id',
                 $id
             )
-            ->latest('created_on')
+            ->latest(
+                'created_on'
+            )
             ->limit(10)
             ->get();
-
-
-
-
-
-
 
 
         /*
@@ -247,8 +329,8 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
-        $tasks = NurseTask::where(
+        $tasks =
+            NurseTask::where(
                 'resident_id',
                 $id
             )
@@ -256,15 +338,10 @@ class ClinicalDashboardController extends Controller
                 'status',
                 'Pending'
             )
-            ->latest('created_on')
+            ->latest(
+                'created_on'
+            )
             ->get();
-
-
-
-
-
-
-
 
 
         /*
@@ -273,144 +350,152 @@ class ClinicalDashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-
         return response()->json([
 
+            /*
+            |--------------------------------------------------------------------------
+            | Resident
+            |--------------------------------------------------------------------------
+            */
 
+            'resident' => [
 
-            'resident'=>[
+                'id' =>
+                    $resident->id,
 
-                'id'=>$resident->id,
+                'name' =>
+                    $resident->full_name,
 
-                'name'=>$resident->full_name,
-
-                'status'=>$resident->status
-
+                'status' =>
+                    $resident->status,
             ],
-
-
-
-
-
-
-
-            'health_status'=>[
-
-
-            'risk_score'=>$riskScore?->risk_score ?? 0,
-
-
-            'risk_level'=>
-                $healthTrend['current_condition']['status']
-                ??
-                'UNKNOWN',
-
-
-
-            'summary'=>
-
-                !empty(
-                    $healthTrend['current_condition']['reasons']
-                )
-
-                ?
-
-                implode(
-                    " ",
-                    $healthTrend['current_condition']['reasons']
-                )
-
-                :
-
-                'No clinical risk detected.'
-
-
-
-        ],
-
-
-
-
-
-
-
-
-            'health_trend'=>$healthTrend,
-
-
-
-
-
-
-
-
-            'latest_vital'=>$latestVital,
-
-
-
-
-
-
-
-
-            'active_alerts'=>[
-
-                'count'=>$alerts->count(),
-
-                'data'=>$alerts
-
-            ],
-
-
-
-
-
-
-
-
-            'ai_predictions'=>$predictions,
-
-
-
-
-
-
-
-
-            'clinical_recommendations'=>$recommendations,
-
-
-
-
-
-
-
-
-            'pending_tasks'=>[
-
-                'count'=>$tasks->count(),
-
-                'data'=>$tasks
-
-            ],
-
-
-
-
-
-
 
 
             /*
             |--------------------------------------------------------------------------
-            | NEW: AI Health Journey
+            | Health Status
             |--------------------------------------------------------------------------
             */
 
+            'health_status' => [
 
-            'health_journey'=>$healthJourney,
+                'risk_score' =>
+                    $riskScore?->risk_score ?? 0,
 
-            'care_plan'=>$carePlan,
+                'risk_level' =>
+                    $healthTrend[
+                        'current_condition'
+                    ]['status']
+                    ?? 'UNKNOWN',
+
+                'summary' =>
+                    !empty(
+                        $healthTrend[
+                            'current_condition'
+                        ]['reasons']
+                    )
+                        ?
+                        implode(
+                            ' ',
+                            $healthTrend[
+                                'current_condition'
+                            ]['reasons']
+                        )
+                        :
+                        'No clinical risk detected.',
+            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Health Trend
+            |--------------------------------------------------------------------------
+            */
+
+            'health_trend' =>
+                $healthTrend,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Latest Vital
+            |--------------------------------------------------------------------------
+            */
+
+            'latest_vital' =>
+                $latestVital,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Active Alerts
+            |--------------------------------------------------------------------------
+            */
+
+            'active_alerts' => [
+
+                'count' =>
+                    $alerts->count(),
+
+                'data' =>
+                    $alerts,
+            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AI Predictions
+            |--------------------------------------------------------------------------
+            */
+
+            'ai_predictions' =>
+                $predictions,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Clinical Recommendations
+            |--------------------------------------------------------------------------
+            */
+
+            'clinical_recommendations' =>
+                $recommendations,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Pending Nurse Tasks
+            |--------------------------------------------------------------------------
+            */
+
+            'pending_tasks' => [
+
+                'count' =>
+                    $tasks->count(),
+
+                'data' =>
+                    $tasks,
+            ],
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AI Health Journey
+            |--------------------------------------------------------------------------
+            */
+
+            'health_journey' =>
+                $healthJourney,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Personalized Care Plan
+            |--------------------------------------------------------------------------
+            */
+
+            'care_plan' =>
+                $carePlan,
 
 
             /*
@@ -419,9 +504,9 @@ class ClinicalDashboardController extends Controller
             |--------------------------------------------------------------------------
             */
 
+            'clinical_decision' =>
+                $clinicalDecision,
 
-            'clinical_decision'=>$clinicalDecision,
-            
 
             /*
             |--------------------------------------------------------------------------
@@ -429,7 +514,8 @@ class ClinicalDashboardController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            'ai_monitoring'=>$aiMonitoring,
+            'ai_monitoring' =>
+                $aiMonitoring,
 
 
             /*
@@ -438,23 +524,63 @@ class ClinicalDashboardController extends Controller
             |--------------------------------------------------------------------------
             */
 
-            'ai_learning'=>$aiLearning,
-
+            'ai_learning' =>
+                $aiLearning,
 
 
             /*
             |--------------------------------------------------------------------------
+            | Step 51
             | Predictive Intelligence
             |--------------------------------------------------------------------------
             */
 
-            'predictive_intelligence' => $predictiveIntelligence,
+            'predictive_intelligence' =>
+                $predictiveIntelligence,
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | Step 52.1
+            | Care Recommendation Intelligence
+            |--------------------------------------------------------------------------
+            */
+
+            'care_recommendation_intelligence' =>
+                $careRecommendationIntelligence,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Step 52.5
+            | Care Workflow Preparation
+            |--------------------------------------------------------------------------
+            */
+
+            'care_workflow_preparation' =>
+                $careWorkflowPreparation,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Step 52.9
+            | Care Workflow Outcome Intelligence
+            |--------------------------------------------------------------------------
+            */
+
+            'care_workflow_outcome_intelligence' =>
+                $careWorkflowOutcome,
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Step 52.10
+            | AI Care Recommendation Learning
+            |--------------------------------------------------------------------------
+            */
+
+            'care_recommendation_learning' =>
+                $careRecommendationLearning,
         ]);
-
-
     }
-
-
-
 }

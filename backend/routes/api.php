@@ -44,6 +44,7 @@ use App\Http\Controllers\AIAlertPerformanceController;
 use App\Http\Controllers\AIDashboardController;
 use App\Http\Controllers\ClinicalDecisionReviewController;
 use App\Http\Controllers\VitalTrendController;
+use App\Http\Controllers\AICareWorkflowController;
 
 /*
 |--------------------------------------------------------------------------
@@ -546,6 +547,19 @@ Route::put(
     ]
 
 );
+
+
+
+/*
+|--------------------------------------------------------------------------
+| AI Care Workflow Controller
+|--------------------------------------------------------------------------
+*/
+
+    Route::post(
+        '/residents/{resident}/care-workflow/{proposal}/approve',
+        [AICareWorkflowController::class, 'approve']
+    );
 
 
 /*
