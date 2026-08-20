@@ -512,6 +512,18 @@ Route::put(
 );
 
 
+Route::post(
+
+    '/nurse/tasks/{id}/outcome',
+    [
+        NurseTaskController::class,
+
+        'recordOutcome'
+    ]
+
+);
+
+
 Route::put(
     '/nurse/tasks/{id}/accept',
     [

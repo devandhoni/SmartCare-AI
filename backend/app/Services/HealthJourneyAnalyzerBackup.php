@@ -17,7 +17,7 @@ use Carbon\Carbon;
 
 
 
-class HealthJourneyAnalyzer
+class HealthJourneyAnalyzerBackup
 {
 
 
@@ -1170,13 +1170,18 @@ foreach($activityGroups as $event)
 
             "timeline_statistics"=>[
 
-            "raw_clinical_events"=>$originalEventCount,
 
-            "ai_timeline_events"=>$optimizedEventCount,
+                "total_events"=>$originalEventCount,
 
-            "duplicates_removed"=>$duplicatesRemoved
 
-        ],
+                "optimized_events"=>$optimizedEventCount,
+
+
+                "duplicates_removed"=>$duplicatesRemoved
+
+
+
+            ],
 
 
 

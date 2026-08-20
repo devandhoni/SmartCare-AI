@@ -22,28 +22,36 @@ class HealthTrendAnalyzer
 
         /*
         |--------------------------------------------------------------------------
-        | Retrieve Latest 10 Vital Records
+        | Retrieve Latest Vital Records
         |--------------------------------------------------------------------------
         */
 
 
-        $vitals = VitalSign::where(
+        $rawVitals = VitalSign::where(
                 'resident_id',
                 $residentId
             )
             ->latest('created_on')
-            ->limit(10)
+            ->limit(20)
             ->get()
             ->reverse();
 
 
 
-
         /*
         |--------------------------------------------------------------------------
-        | Default Values
+        | Remove Duplicate Vital Readings
         |--------------------------------------------------------------------------
         */
+
+
+        $vitals = $this->removeDuplicateVitals(
+            $rawVitals
+        );
+
+
+
+
 
 
         $currentStatus = "STABLE";
@@ -53,6 +61,8 @@ class HealthTrendAnalyzer
         $trendStatus = "STABLE";
 
         $trendAnalysis = [];
+
+
 
 
 
@@ -72,70 +82,46 @@ class HealthTrendAnalyzer
         {
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Blood Pressure
-            |--------------------------------------------------------------------------
-            */
-
-
             if(
-                $latestVital->blood_pressure_systolic >= 180 ||
-                $latestVital->blood_pressure_diastolic >= 120
+                $latestVital->blood_pressure_systolic >=180 ||
+                $latestVital->blood_pressure_diastolic >=120
             )
             {
 
                 $currentReasons[] =
                 "Critical blood pressure detected.";
 
-                $currentStatus = "CRITICAL";
+                $currentStatus="CRITICAL";
 
             }
 
 
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Oxygen Saturation
-            |--------------------------------------------------------------------------
-            */
-
-
             if(
-                $latestVital->oxygen_level < 90
+                $latestVital->oxygen_level <90
             )
             {
 
                 $currentReasons[] =
                 "Low oxygen saturation detected.";
 
-                $currentStatus = "CRITICAL";
+                $currentStatus="CRITICAL";
 
             }
 
 
 
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Blood Glucose
-            |--------------------------------------------------------------------------
-            */
-
-
             if(
-                $latestVital->blood_glucose >= 13
+                $latestVital->blood_glucose >=13
             )
             {
 
                 $currentReasons[] =
                 "High blood glucose detected.";
 
-                if($currentStatus !== "CRITICAL")
+                if($currentStatus!=="CRITICAL")
                 {
-                    $currentStatus = "HIGH";
+                    $currentStatus="HIGH";
                 }
 
             }
@@ -143,28 +129,21 @@ class HealthTrendAnalyzer
 
 
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Temperature
-            |--------------------------------------------------------------------------
-            */
-
-
             if(
-                $latestVital->temperature >= 39
+                $latestVital->temperature >=39
             )
             {
 
                 $currentReasons[] =
                 "High temperature detected.";
 
-                $currentStatus = "CRITICAL";
+                $currentStatus="CRITICAL";
 
             }
 
 
         }
+
 
 
 
@@ -173,27 +152,21 @@ class HealthTrendAnalyzer
 
         /*
         |--------------------------------------------------------------------------
-        | Historical Trend Analysis
+        | Trend Analysis
         |--------------------------------------------------------------------------
         */
 
 
-        if($vitals->count() >= 2)
+        if($vitals->count() >=2)
         {
 
 
-            $firstVital = $vitals->first();
+            $firstVital=$vitals->first();
 
-            $lastVital = $vitals->last();
-
-
+            $lastVital=$vitals->last();
 
 
-            /*
-            |--------------------------------------------------------------------------
-            | Blood Pressure Trend
-            |--------------------------------------------------------------------------
-            */
+
 
 
             if(
@@ -202,13 +175,12 @@ class HealthTrendAnalyzer
             )
             {
 
-                $trendAnalysis[] =
+                $trendAnalysis[]=
                 "Blood pressure trend is increasing.";
 
-                $trendStatus = "WORSENING";
+                $trendStatus="WORSENING";
 
             }
-
 
 
             elseif(
@@ -217,7 +189,7 @@ class HealthTrendAnalyzer
             )
             {
 
-                $trendAnalysis[] =
+                $trendAnalysis[]=
                 "Blood pressure trend is improving.";
 
             }
@@ -226,36 +198,21 @@ class HealthTrendAnalyzer
 
 
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | Oxygen Trend
-            |--------------------------------------------------------------------------
-            */
-
-
             if(
                 $lastVital->oxygen_level <
                 $firstVital->oxygen_level
             )
             {
 
-                $trendAnalysis[] =
+                $trendAnalysis[]=
                 "Oxygen saturation trend is decreasing.";
 
-                $trendStatus = "WORSENING";
+                $trendStatus="WORSENING";
 
             }
 
 
 
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Glucose Trend
-            |--------------------------------------------------------------------------
-            */
 
 
             if(
@@ -264,13 +221,12 @@ class HealthTrendAnalyzer
             )
             {
 
-                $trendAnalysis[] =
+                $trendAnalysis[]=
                 "Blood glucose trend is increasing.";
 
-                $trendStatus = "WORSENING";
+                $trendStatus="WORSENING";
 
             }
-
 
 
         }
@@ -278,10 +234,11 @@ class HealthTrendAnalyzer
 
 
 
+
         if(empty($trendAnalysis))
         {
 
-            $trendAnalysis[] =
+            $trendAnalysis[]=
             "No significant health changes detected.";
 
         }
@@ -294,12 +251,16 @@ class HealthTrendAnalyzer
 
         /*
         |--------------------------------------------------------------------------
-        | Data Quality Check
+        | Data Quality
         |--------------------------------------------------------------------------
         */
 
 
-        $dataQuality = $this->checkDataQuality($vitals);
+        $dataQuality =
+            $this->checkDataQuality(
+                $rawVitals,
+                $vitals
+            );
 
 
 
@@ -308,15 +269,15 @@ class HealthTrendAnalyzer
 
         /*
         |--------------------------------------------------------------------------
-        | Trend Confidence
+        | Confidence
         |--------------------------------------------------------------------------
         */
 
 
-        $confidence = $this->calculateConfidence(
-            $vitals->count(),
-            $dataQuality['status']
-        );
+        $confidence =
+            $this->calculateConfidence(
+                $vitals->count()
+            );
 
 
 
@@ -326,17 +287,19 @@ class HealthTrendAnalyzer
 
         /*
         |--------------------------------------------------------------------------
-        | Prepare Chart Data
+        | Chart Data
         |--------------------------------------------------------------------------
         */
 
 
-        $chartData = $vitals->map(function($vital){
+        $chartData =
+            $vitals
+            ->map(function($vital){
 
 
-            return [
+                return [
 
-                "date" =>
+                    "date" =>
                     $vital->created_on
                     ?
                     $vital->created_on->format('Y-m-d')
@@ -344,53 +307,47 @@ class HealthTrendAnalyzer
                     null,
 
 
-                "blood_pressure_systolic" =>
+                    "blood_pressure_systolic" =>
                     $vital->blood_pressure_systolic,
 
 
-                "blood_pressure_diastolic" =>
+                    "blood_pressure_diastolic" =>
                     $vital->blood_pressure_diastolic,
 
 
-                "oxygen_level" =>
+                    "oxygen_level" =>
                     $vital->oxygen_level,
 
 
-                "blood_glucose" =>
+                    "blood_glucose" =>
                     $vital->blood_glucose,
 
 
-                "temperature" =>
+                    "temperature" =>
                     $vital->temperature,
 
 
-                "heart_rate" =>
+                    "heart_rate" =>
                     $vital->heart_rate
 
-            ];
+                ];
 
 
-        })->values();
-
-
-
-
+            })
+            ->values();
 
 
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | Final Response
-        |--------------------------------------------------------------------------
-        */
+
+
+
 
 
         return [
 
 
             "resident_id"=>$residentId,
-
 
 
             "current_condition"=>[
@@ -400,7 +357,6 @@ class HealthTrendAnalyzer
                 "reasons"=>$currentReasons
 
             ],
-
 
 
 
@@ -414,24 +370,13 @@ class HealthTrendAnalyzer
 
 
 
-
-
             "trend_confidence"=>$confidence,
-
-
-
 
 
             "data_quality"=>$dataQuality,
 
 
-
-
-
             "data_points"=>$vitals->count(),
-
-
-
 
 
             "vitals"=>$chartData
@@ -440,8 +385,9 @@ class HealthTrendAnalyzer
         ];
 
 
-
     }
+
+
 
 
 
@@ -451,67 +397,89 @@ class HealthTrendAnalyzer
 
     /*
     |--------------------------------------------------------------------------
-    | Check Duplicate / Data Quality
+    | Remove Duplicate Vitals
     |--------------------------------------------------------------------------
     */
 
 
-    private function checkDataQuality($vitals)
+    private function removeDuplicateVitals($vitals)
     {
 
 
-        if($vitals->count() < 3)
-        {
-
-            return [
-
-                "status"=>"INSUFFICIENT",
-
-                "message"=>"Limited historical vital data available."
-
-            ];
-
-        }
+        return $vitals
+            ->unique(function($vital){
 
 
-
-
-        $uniqueValues = $vitals
-            ->map(function($vital){
-
-                return implode(
-                    "-",
-                    [
+                return implode("-",[
 
                     $vital->blood_pressure_systolic,
-                    $vital->blood_pressure_diastolic,
-                    $vital->oxygen_level,
-                    $vital->blood_glucose,
-                    $vital->temperature
 
-                    ]
-                );
+                    $vital->blood_pressure_diastolic,
+
+                    $vital->oxygen_level,
+
+                    $vital->blood_glucose,
+
+                    $vital->temperature,
+
+                    $vital->heart_rate
+
+                ]);
+
 
             })
-            ->unique();
+            ->values();
+
+
+    }
 
 
 
 
 
-        if($uniqueValues->count() == 1)
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Data Quality
+    |--------------------------------------------------------------------------
+    */
+
+
+    private function checkDataQuality(
+        $original,
+        $cleaned
+    )
+    {
+
+
+        $removed =
+            $original->count()
+            -
+            $cleaned->count();
+
+
+
+        if($removed > 0)
         {
 
             return [
 
-                "status"=>"DUPLICATED",
+                "status"=>"CLEANED",
 
-                "message"=>"Multiple identical vital readings detected."
+                "message"=>"Duplicate vital readings removed.",
+
+                "original_points"=>$original->count(),
+
+                "unique_points"=>$cleaned->count(),
+
+                "duplicates_removed"=>$removed
 
             ];
 
         }
-
 
 
 
@@ -519,13 +487,20 @@ class HealthTrendAnalyzer
 
             "status"=>"GOOD",
 
-            "message"=>"Sufficient vital history available."
+            "message"=>"Vital history is clean.",
+
+            "original_points"=>$original->count(),
+
+            "unique_points"=>$cleaned->count(),
+
+            "duplicates_removed"=>0
 
         ];
 
 
-
     }
+
+
 
 
 
@@ -535,60 +510,37 @@ class HealthTrendAnalyzer
 
     /*
     |--------------------------------------------------------------------------
-    | Calculate AI Confidence
+    | AI Confidence
     |--------------------------------------------------------------------------
     */
 
 
-    private function calculateConfidence(
-        $dataPoints,
-        $quality
-    )
+    private function calculateConfidence($points)
     {
 
 
-        if($quality === "DUPLICATED")
+        if($points >=10)
         {
-
-            return 40;
-
-        }
-
-
-
-        if($dataPoints >= 10)
-        {
-
             return 90;
-
         }
 
 
-
-        if($dataPoints >= 5)
+        if($points >=5)
         {
-
             return 75;
-
         }
 
 
-
-        if($dataPoints >= 3)
+        if($points >=3)
         {
-
             return 60;
-
         }
-
 
 
         return 40;
 
 
-
     }
-
 
 
 }

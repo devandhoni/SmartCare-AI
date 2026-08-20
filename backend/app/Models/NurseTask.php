@@ -142,12 +142,6 @@ class NurseTask extends Model
 
 
 
-
-
-
-
-
-
     /*
     |--------------------------------------------------------------------------
     | Assigned Nurse/User
@@ -229,6 +223,20 @@ class NurseTask extends Model
 
         );
 
+
+    }
+
+
+    public function clinicalOutcome()
+    {
+
+        return $this->hasOne(
+
+            AiClinicalOutcome::class,
+
+            'nurse_task_id'
+
+        );
 
     }
 

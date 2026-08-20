@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Services\AICommandCenterEngine;
+use App\Services\AIOutcomePerformanceEngine;
 use App\Helpers\ApiResponse;
-
 
 
 class AICommandCenterController extends Controller
@@ -20,16 +19,56 @@ class AICommandCenterController extends Controller
 
 
     public function index(
-        AICommandCenterEngine $engine
+        AICommandCenterEngine $engine,
+        AIOutcomePerformanceEngine $performanceEngine
     )
     {
 
 
-        $commandCenter =
-            $engine->analyze();
+        /*
+        |--------------------------------------------------------------------------
+        | Generate AI Command Center Intelligence
+        |--------------------------------------------------------------------------
+        */
+
+
+        $commandCenter = $engine->analyze();
 
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | Generate AI Learning Performance
+        |--------------------------------------------------------------------------
+        */
+
+
+        $aiOutcomePerformance =
+            $performanceEngine->analyze();
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Merge AI Outcome Intelligence
+        |--------------------------------------------------------------------------
+        */
+
+
+        $commandCenter['ai_outcome_performance'] =
+            $aiOutcomePerformance;
+
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return Complete AI Command Center
+        |--------------------------------------------------------------------------
+        */
 
 
         return ApiResponse::success(
@@ -42,7 +81,6 @@ class AICommandCenterController extends Controller
 
 
     }
-
 
 
 }

@@ -18,11 +18,14 @@ class AICommandCenterEngine
 
     protected ClinicalPerformanceDashboardEngine $clinicalPerformance;
 
+    protected AIOutcomePerformanceEngine $outcomePerformance;
+
 
 
     public function __construct(
         AIExecutiveSummaryEngine $executiveSummary,
-        ClinicalPerformanceDashboardEngine $clinicalPerformance
+        ClinicalPerformanceDashboardEngine $clinicalPerformance,
+        AIOutcomePerformanceEngine $outcomePerformance
     )
     {
 
@@ -32,6 +35,10 @@ class AICommandCenterEngine
 
         $this->clinicalPerformance =
             $clinicalPerformance;
+
+
+        $this->outcomePerformance =
+        $outcomePerformance;
 
     }
 
@@ -83,8 +90,16 @@ class AICommandCenterEngine
 
 
 
+        
+        /*
+        |--------------------------------------------------------------------------
+        | Outcome Performance
+        |--------------------------------------------------------------------------
+        */
 
 
+        $outcomePerformance =
+            $this->outcomePerformance->analyze();
 
 
 
@@ -476,7 +491,8 @@ class AICommandCenterEngine
 
 
 
-
+            'ai_outcome_performance'=>
+            $outcomePerformance,
 
 
 

@@ -10,6 +10,8 @@ use App\Models\AiAlert;
 use App\Models\ActivityLog;
 use App\Models\AlertEscalationLog;
 use App\Models\ClinicalTimeline;
+use App\Models\AiClinicalOutcome;
+use App\Models\HealthPrediction;
 
 use App\Helpers\ApiResponse;
 
@@ -975,6 +977,193 @@ else
 
 
     }
+
+    /*
+|--------------------------------------------------------------------------
+| Record Clinical Outcome
+|--------------------------------------------------------------------------
+*/
+
+public function recordOutcome(
+    Request $request,
+    $id
+)
+{
+
+
+    $request->validate([
+
+        'outcome_status'=>
+            'required|in:IMPROVED,STABLE,DETERIORATED,UNKNOWN',
+
+        'outcome_notes'=>
+            'nullable|string'
+
+    ]);
+
+
+
+
+
+    $task = NurseTask::findOrFail($id);
+
+
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Get Related AI Prediction
+    |--------------------------------------------------------------------------
+    */
+
+
+    $prediction =
+        HealthPrediction::where(
+            'resident_id',
+            $task->resident_id
+        )
+        ->latest('created_on')
+        ->first();
+
+
+
+
+
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate AI Accuracy
+    |--------------------------------------------------------------------------
+    */
+
+
+    $accuracy = null;
+
+
+
+    if($prediction)
+    {
+
+
+        if(
+            $request->outcome_status
+            ===
+            'IMPROVED'
+        )
+        {
+
+            $accuracy = 95;
+
+        }
+
+        elseif(
+
+            $request->outcome_status
+            ===
+            'STABLE'
+
+        )
+        {
+
+            $accuracy = 85;
+
+        }
+
+        elseif(
+
+            $request->outcome_status
+            ===
+            'DETERIORATED'
+
+        )
+        {
+
+            $accuracy = 40;
+
+        }
+
+
+    }
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create AI Outcome Record
+    |--------------------------------------------------------------------------
+    */
+
+
+            $outcome = AiClinicalOutcome::create([
+
+
+                'resident_id'=>
+                    $task->resident_id,
+
+
+                'nurse_task_id'=>
+                    $task->id,
+
+
+                'prediction_id'=>
+                    $prediction?->id,
+
+
+                'initial_risk_level'=>
+                    $prediction?->risk_level,
+
+
+                'initial_confidence'=>
+                    $prediction?->confidence ?? 0,
+
+
+                'outcome_status'=>
+                    $request->outcome_status,
+
+
+                'outcome_notes'=>
+                    $request->outcome_notes,
+
+
+                'ai_accuracy_score'=>
+                    $accuracy,
+
+
+                'recorded_by'=>
+                    auth()->id(),
+
+
+                'recorded_at'=>
+                    now()
+
+
+            ]);
+
+
+
+
+
+
+
+
+            return ApiResponse::success(
+
+                'Clinical outcome recorded successfully',
+
+                [
+
+                    'outcome'=>$outcome
+
+                ]
+
+            );
+
+
+        }
 
 
 

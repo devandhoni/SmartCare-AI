@@ -72,6 +72,19 @@ class HealthPrediction extends Model
 
     }
 
+    public function outcomes()
+    {
+
+        return $this->hasMany(
+
+            AiClinicalOutcome::class,
+
+            'prediction_id'
+
+        );
+
+    }
+
 
 
 }
