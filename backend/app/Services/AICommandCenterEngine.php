@@ -2,51 +2,39 @@
 
 namespace App\Services;
 
-
 use App\Models\Resident;
 use App\Models\AiAlert;
 use App\Models\HealthPrediction;
 use App\Models\HealthRiskScore;
 
-
-
 class AICommandCenterEngine
 {
-
-
     protected AIExecutiveSummaryEngine $executiveSummary;
 
     protected ClinicalPerformanceDashboardEngine $clinicalPerformance;
 
     protected AIOutcomePerformanceEngine $outcomePerformance;
 
-
+    protected PredictiveIntelligenceAggregator $predictiveAggregator;
 
     public function __construct(
         AIExecutiveSummaryEngine $executiveSummary,
         ClinicalPerformanceDashboardEngine $clinicalPerformance,
-        AIOutcomePerformanceEngine $outcomePerformance
-    )
-    {
-
+        AIOutcomePerformanceEngine $outcomePerformance,
+        PredictiveIntelligenceAggregator $predictiveAggregator
+    ) {
         $this->executiveSummary =
             $executiveSummary;
-
 
         $this->clinicalPerformance =
             $clinicalPerformance;
 
-
         $this->outcomePerformance =
-        $outcomePerformance;
+            $outcomePerformance;
 
+        $this->predictiveAggregator =
+            $predictiveAggregator;
     }
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -54,475 +42,317 @@ class AICommandCenterEngine
     |--------------------------------------------------------------------------
     */
 
-
     public function analyze()
     {
-
-
-
         /*
         |--------------------------------------------------------------------------
-        | Executive Summary
+        | 1. Executive Summary
         |--------------------------------------------------------------------------
         */
-
 
         $summary =
             $this->executiveSummary->analyze();
 
-
-
-
-
-
-
-
-
         /*
         |--------------------------------------------------------------------------
-        | Clinical Performance
+        | 2. Clinical Performance
         |--------------------------------------------------------------------------
         */
-
 
         $performance =
             $this->clinicalPerformance->analyze();
 
-
-
-        
         /*
         |--------------------------------------------------------------------------
-        | Outcome Performance
+        | 3. AI Outcome Performance
         |--------------------------------------------------------------------------
         */
-
 
         $outcomePerformance =
             $this->outcomePerformance->analyze();
 
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Step 51.6B
+        | Facility Predictive Intelligence
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        |
+        | This is NOT a single resident prediction.
+        |
+        | PredictiveIntelligenceAggregator analyzes all residents using
+        | PredictiveDeteriorationService and returns facility-level:
+        |
+        | - command status
+        | - predictive summary
+        | - top clinical drivers
+        | - priority residents
+        |
+        */
 
-
-
-
+        $predictiveIntelligence =
+            $this->predictiveAggregator->analyze();
 
         /*
         |--------------------------------------------------------------------------
-        | Priority Resident Monitoring
+        | 5. Existing Priority Resident Monitoring
         |--------------------------------------------------------------------------
         */
 
-
         $priorityResidents = [];
 
-
-
         $criticalResidents =
-
             HealthRiskScore::where(
                 'risk_level',
                 'CRITICAL'
             )
-
             ->with('resident')
-
             ->orderByDesc(
                 'risk_score'
             )
-
             ->get();
 
+        foreach ($criticalResidents as $risk) {
 
-
-
-
-
-
-        foreach($criticalResidents as $risk)
-        {
-
-
-            if($risk->resident)
-            {
-
-
-                $priorityResidents[] = [
-
-
-                    'resident_id'=>
-                    $risk->resident_id,
-
-
-                    'resident_name'=>
-                    $risk->resident->full_name,
-
-
-                    'priority'=>
-                    'CRITICAL',
-
-
-                    'risk_score'=>
-                    $risk->risk_score,
-
-
-                    'recommendation'=>
-                    'Immediate clinical monitoring required.'
-
-
-                ];
-
-
-
+            if (!$risk->resident) {
+                continue;
             }
-
-
-        }
-
-
-
-
-
-
-
-
-        if(empty($priorityResidents))
-        {
-
 
             $priorityResidents[] = [
 
+                'resident_id' =>
+                    $risk->resident_id,
 
-                'message'=>
-                'No critical resident requires immediate attention.'
+                'resident_name' =>
+                    $risk->resident->full_name
+                    ?? $risk->resident->name
+                    ?? ('Resident ' . $risk->resident_id),
 
+                'priority' =>
+                    'CRITICAL',
 
+                'risk_score' =>
+                    $risk->risk_score,
+
+                'recommendation' =>
+                    'Immediate clinical monitoring required.',
             ];
-
-
         }
 
+        if (empty($priorityResidents)) {
 
+            $priorityResidents[] = [
 
-
-
-
-
-
+                'message' =>
+                    'No critical resident requires immediate attention.',
+            ];
+        }
 
         /*
         |--------------------------------------------------------------------------
-        | Latest AI Decision
+        | 6. Latest AI Clinical Decision
         |--------------------------------------------------------------------------
         */
 
-
         $latestAlert =
-
             AiAlert::with('resident')
+                ->where(
+                    'status',
+                    'OPEN'
+                )
+                ->where(
+                    'severity',
+                    'CRITICAL'
+                )
+                ->latest(
+                    'created_on'
+                )
+                ->first();
 
-            ->where(
-                'status',
-                'OPEN'
-            )
+        $latestAIDecision =
+            null;
 
-            ->where(
-                'severity',
-                'CRITICAL'
-            )
-
-            ->latest(
-                'created_on'
-            )
-
-            ->first();
-
-
-
-
-
-        $latestAIDecision = null;
-
-
-
-
-
-        if($latestAlert)
-        {
-
+        if ($latestAlert) {
 
             $riskFactors = [];
 
-
-
-            $message = 
+            $message =
                 $latestAlert->message;
 
+            if ($message) {
 
+                $parts =
+                    explode(
+                        ',',
+                        $message
+                    );
 
-            if($message)
-            {
+                foreach ($parts as $part) {
 
-
-                $parts = explode(
-                    ',',
-                    $message
-                );
-
-
-                foreach($parts as $part)
-                {
-
-
-                    $riskFactors[] =
+                    $part =
                         trim($part);
 
+                    if ($part !== '') {
 
+                        $riskFactors[] =
+                            $part;
+                    }
                 }
-
-
             }
-
-
-
-
-
 
             $latestAIDecision = [
 
+                'resident_id' =>
+                    $latestAlert->resident_id,
 
-                'resident_id'=>
-                $latestAlert->resident_id,
+                'resident_name' =>
+                    $latestAlert->resident
+                    ?
+                    (
+                        $latestAlert->resident->full_name
+                        ??
+                        $latestAlert->resident->name
+                        ??
+                        'Unknown'
+                    )
+                    :
+                    'Unknown',
 
+                'priority' =>
+                    $latestAlert->severity,
 
+                'decision_score' =>
+                    (float)
+                    $latestAlert->ai_confidence,
 
-                'resident_name'=>
-                $latestAlert->resident
-                ?
-                $latestAlert->resident->full_name
-                :
-                'Unknown',
+                'risk_factors' =>
+                    $riskFactors,
 
-
-
-                'priority'=>
-                $latestAlert->severity,
-
-
-
-                'decision_score'=>
-                (float)
-                $latestAlert->ai_confidence,
-
-
-
-                'risk_factors'=>
-                $riskFactors,
-
-
-
-                'generated_at'=>
-                $latestAlert->created_at
-
-
-
+                'generated_at' =>
+                    $latestAlert->created_at,
             ];
-
-
-
         }
-
-
-
-
-
-
-
-
 
         /*
         |--------------------------------------------------------------------------
-        | System Health Status
+        | 7. System Health Status
         |--------------------------------------------------------------------------
         */
 
-
         $activeAlerts =
-
             AiAlert::where(
                 'status',
                 'OPEN'
             )
-
             ->count();
 
-
-
-
-
-
-
         $status =
-
             $activeAlerts > 0
-
             ?
-
             'ATTENTION REQUIRED'
-
             :
-
             'STABLE';
-
-
-
-
-
-
-
-
-
-
-
-
 
         /*
         |--------------------------------------------------------------------------
-        | Return AI Command Center
+        | 8. Clinical Overview
         |--------------------------------------------------------------------------
         */
 
+        $clinicalOverview = [
 
-        return [
-
-
-
-            'system_status'=>
-            $status,
-
-
-
-
-
-            'executive_summary'=>
-            $summary,
-
-
-
-
-
-
-
-            'clinical_overview'=>[
-
-
-
-                'total_residents'=>
+            'total_residents' =>
                 Resident::count(),
 
-
-
-                'critical_cases'=>
-
+            'critical_cases' =>
                 HealthRiskScore::where(
                     'risk_level',
                     'CRITICAL'
                 )
-
-                ->distinct(
-                    'resident_id'
-                )
-
+                ->distinct()
                 ->count(
                     'resident_id'
                 ),
 
+            'active_alerts' =>
+                $activeAlerts,
+        ];
 
+        /*
+        |--------------------------------------------------------------------------
+        | 9. AI Performance
+        |--------------------------------------------------------------------------
+        */
 
-                'active_alerts'=>
-                $activeAlerts
+        $aiPerformance = [
 
-
-
-            ],
-
-
-
-
-
-
-
-
-
-            'ai_performance'=>[
-
-
-
-                'predictions_generated'=>
+            'predictions_generated' =>
                 HealthPrediction::count(),
 
-
-
-                'high_risk_predictions'=>
-
+            'high_risk_predictions' =>
                 HealthPrediction::whereIn(
                     'risk_level',
                     [
                         'HIGH',
-                        'CRITICAL'
+                        'CRITICAL',
                     ]
                 )
-
-                ->count()
-
-
-
-            ],
-
-
-
-
-
-
-
-
-
-            'clinical_performance'=>
-            $performance,
-
-
-
-            'ai_outcome_performance'=>
-            $outcomePerformance,
-
-
-
-
-            'priority_attention'=>
-            $priorityResidents,
-
-
-
-
-
-
-
-
-            /*
-            | NEW
-            | Latest AI Clinical Decision
-            */
-
-            'latest_ai_decision'=>
-            $latestAIDecision
-
-
-
+                ->count(),
         ];
 
+        /*
+        |--------------------------------------------------------------------------
+        | 10. Final AI Command Center Response
+        |--------------------------------------------------------------------------
+        */
 
+        return [
 
+            'system_status' =>
+                $status,
+
+            'executive_summary' =>
+                $summary,
+
+            'clinical_overview' =>
+                $clinicalOverview,
+
+            'ai_performance' =>
+                $aiPerformance,
+
+            'clinical_performance' =>
+                $performance,
+
+            'ai_outcome_performance' =>
+                $outcomePerformance,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Critical Priority Monitoring
+            |--------------------------------------------------------------------------
+            */
+
+            'priority_attention' =>
+                $priorityResidents,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Latest AI Clinical Decision
+            |--------------------------------------------------------------------------
+            */
+
+            'latest_ai_decision' =>
+                $latestAIDecision,
+
+            /*
+            |--------------------------------------------------------------------------
+            | Step 51.6B Facility Predictive Intelligence
+            |--------------------------------------------------------------------------
+            */
+
+            'predictive_intelligence' =>
+                $predictiveIntelligence,
+        ];
     }
-
-
-
 }

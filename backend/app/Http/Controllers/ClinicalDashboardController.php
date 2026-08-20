@@ -19,6 +19,7 @@ use App\Services\CareRecommendationEngine;
 use App\Services\ClinicalDecisionEngine;
 use App\Services\AIMonitoringAnalyzer;
 use App\Services\AILearningAnalyzer;
+use App\Services\PredictiveDeteriorationService;
 
 
 class ClinicalDashboardController extends Controller
@@ -39,7 +40,8 @@ class ClinicalDashboardController extends Controller
         CareRecommendationEngine $careRecommendationEngine,
         ClinicalDecisionEngine $clinicalDecisionEngine,
         AIMonitoringAnalyzer $aiMonitoringAnalyzer,
-        AILearningAnalyzer $aiLearningAnalyzer
+        AILearningAnalyzer $aiLearningAnalyzer,
+        PredictiveDeteriorationService $predictiveDeteriorationService
     )
     {
 
@@ -112,6 +114,18 @@ class ClinicalDashboardController extends Controller
 
 
         $aiLearning = $aiLearningAnalyzer->analyze($id);
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Predictive Intelligence
+        |--------------------------------------------------------------------------
+        */
+
+        $predictiveIntelligence = $predictiveDeteriorationService->predict($id);
+
 
 
 
@@ -425,6 +439,16 @@ class ClinicalDashboardController extends Controller
             */
 
             'ai_learning'=>$aiLearning,
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Predictive Intelligence
+            |--------------------------------------------------------------------------
+            */
+
+            'predictive_intelligence' => $predictiveIntelligence,
 
         ]);
 
