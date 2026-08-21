@@ -45,6 +45,7 @@ use App\Http\Controllers\AIDashboardController;
 use App\Http\Controllers\ClinicalDecisionReviewController;
 use App\Http\Controllers\VitalTrendController;
 use App\Http\Controllers\AICareWorkflowController;
+use App\Http\Controllers\AIExecutiveReportingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -559,6 +560,25 @@ Route::put(
     Route::post(
         '/residents/{resident}/care-workflow/{proposal}/approve',
         [AICareWorkflowController::class, 'approve']
+    );
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| AI Executive Reporting Controller
+|--------------------------------------------------------------------------
+*/
+
+
+    Route::get(
+        '/ai/executive-report',
+        [
+            AIExecutiveReportingController::class,
+            'index'
+        ]
     );
 
 
