@@ -82,13 +82,14 @@ class MedicationAdministrationController extends Controller
 
             $latestRecord =
                 MedicationAdministrationRecord::where(
-
                     'resident_medication_id',
-
                     $medication->id
-
                 )
-                ->latest()
+                ->whereDate(
+                    'administered_date',
+                    today()
+                )
+                ->latest('created_on')
                 ->first();
 
 

@@ -19,39 +19,35 @@ class ResidentMedicationController extends Controller
 
     public function store(Request $request, $id)
     {
-
-
         $request->validate([
-
-            'medication_id'=>'required|exists:medications,id',
-            'dosage_instruction'=>'required',
-            'frequency'=>'required'
-
+            'medication_id' => 'required|exists:medications,id',
+            'dosage_instruction' => 'required|string',
+            'dosage_quantity' => 'required|integer|min:1',
+            'frequency' => 'required|string',
+            'time_slot' => 'required|in:AM,PM,NIGHT,OTHER',
+            'scheduled_time' => 'nullable',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'prescribed_by' => 'nullable',
         ]);
-
-
 
         $residentMedication = ResidentMedication::create([
-
-            'resident_id'=>$id,
-            'medication_id'=>$request->medication_id,
-            'dosage_instruction'=>$request->dosage_instruction,
-            'frequency'=>$request->frequency,
-            'start_date'=>$request->start_date,
-            'end_date'=>$request->end_date,
-            'prescribed_by'=>$request->prescribed_by
-
+            'resident_id' => $id,
+            'medication_id' => $request->medication_id,
+            'dosage_instruction' => $request->dosage_instruction,
+            'dosage_quantity' => $request->dosage_quantity,
+            'frequency' => $request->frequency,
+            'time_slot' => strtoupper($request->time_slot),
+            'scheduled_time' => $request->scheduled_time,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'prescribed_by' => $request->prescribed_by,
         ]);
-
-
 
         return response()->json([
-
-            'message'=>'Medication assigned successfully',
-            'resident_medication'=>$residentMedication
-
-        ]);
-
+            'message' => 'Medication assigned successfully',
+            'resident_medication' => $residentMedication->load('medication'),
+        ], 201);
     }
 
 
