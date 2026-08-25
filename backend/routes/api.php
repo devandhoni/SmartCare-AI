@@ -46,6 +46,7 @@ use App\Http\Controllers\ClinicalDecisionReviewController;
 use App\Http\Controllers\VitalTrendController;
 use App\Http\Controllers\AICareWorkflowController;
 use App\Http\Controllers\AIExecutiveReportingController;
+use App\Http\Controllers\CareRecordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -792,6 +793,40 @@ Route::get(
         CareRecommendationController::class,
         'show'
     ]
+);
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Care in Resident Tab
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/residents/{id}/care-records',
+    [CareRecordController::class, 'index']
+);
+
+Route::post(
+    '/residents/{id}/care-records',
+    [CareRecordController::class, 'store']
+);
+
+Route::get(
+    '/care-records/{id}',
+    [CareRecordController::class, 'show']
+);
+
+Route::put(
+    '/care-records/{id}',
+    [CareRecordController::class, 'update']
+);
+
+Route::delete(
+    '/care-records/{id}',
+    [CareRecordController::class, 'destroy']
 );
 
 /*
