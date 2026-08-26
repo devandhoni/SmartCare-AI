@@ -211,79 +211,521 @@ const [vitalsError, setVitalsError] = useState("");
 const [savingVitals, setSavingVitals] = useState(false);
 
 
-const [careRecords, setCareRecords] = useState({
-    1: {
-        tasks: [
-            { id: 1, label: "Morning hygiene", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:30 AM" },
-            { id: 2, label: "Bath / shower", category: "Personal Care", completed: false, completedAt: null },
-            { id: 3, label: "Oral care", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:45 AM" },
-            { id: 4, label: "Mobility / assisted walk", category: "Mobility", completed: false, completedAt: null },
-            { id: 5, label: "Hydration check", category: "Nutrition", completed: false, completedAt: null },
-            { id: 6, label: "Room and comfort check", category: "Environment", completed: true, completedAt: "25 Aug 2026, 09:00 AM" },
-        ],
-        notes: [
-            { id: 1, recordedAt: "25 Aug 2026, 09:05 AM", note: "Resident comfortable after morning care. No new concerns observed." },
-        ],
-    },
-    2: {
-        tasks: [
-            { id: 1, label: "Morning hygiene", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:40 AM" },
-            { id: 2, label: "Bath / shower", category: "Personal Care", completed: false, completedAt: null },
-            { id: 3, label: "Oral care", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:50 AM" },
-            { id: 4, label: "Mobility / assisted walk", category: "Mobility", completed: false, completedAt: null },
-            { id: 5, label: "Hydration check", category: "Nutrition", completed: false, completedAt: null },
-            { id: 6, label: "Room and comfort check", category: "Environment", completed: true, completedAt: "25 Aug 2026, 09:10 AM" },
-        ],
-        notes: [],
-    },
-    3: {
-        tasks: [
-            { id: 1, label: "Morning hygiene", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:35 AM" },
-            { id: 2, label: "Bath / shower", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 08:00 AM" },
-            { id: 3, label: "Oral care", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 08:05 AM" },
-            { id: 4, label: "Mobility / assisted walk", category: "Mobility", completed: false, completedAt: null },
-            { id: 5, label: "Hydration check", category: "Nutrition", completed: true, completedAt: "25 Aug 2026, 09:15 AM" },
-            { id: 6, label: "Room and comfort check", category: "Environment", completed: true, completedAt: "25 Aug 2026, 09:20 AM" },
-        ],
-        notes: [],
-    },
-    4: {
-        tasks: [
-            { id: 1, label: "Morning hygiene", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:20 AM" },
-            { id: 2, label: "Bath / shower", category: "Personal Care", completed: false, completedAt: null },
-            { id: 3, label: "Oral care", category: "Personal Care", completed: true, completedAt: "25 Aug 2026, 07:35 AM" },
-            { id: 4, label: "Mobility / assisted walk", category: "Mobility", completed: false, completedAt: null },
-            { id: 5, label: "Hydration check", category: "Nutrition", completed: false, completedAt: null },
-            { id: 6, label: "Room and comfort check", category: "Environment", completed: true, completedAt: "25 Aug 2026, 09:05 AM" },
-        ],
-        notes: [],
-    },
+const [careApiRecords, setCareApiRecords] = useState([]);
+const [careLoading, setCareLoading] = useState(false);
+const [careError, setCareError] = useState("");
+const [showCareForm, setShowCareForm] = useState(false);
+const [savingCareRecord, setSavingCareRecord] = useState(false);
+const [editingCareRecordId, setEditingCareRecordId] = useState(null);
+const [careForm, setCareForm] = useState({
+    care_type: "Personal Care",
+    title: "",
+    notes: "",
+    care_status: "COMPLETED",
+    recorded_at: "",
 });
 
-const [careNote, setCareNote] = useState("");
+const careTypeOptions = [
+    "Personal Care",
+    "Nutrition",
+    "Mobility",
+    "Toileting",
+    "Skin / Wound",
+    "Behaviour",
+    "Observation",
+    "Nursing Note",
+    "Incident",
+    "Environment",
+    "Other",
+];
 
-const [documentRecords, setDocumentRecords] = useState({
-    1: [
-        { id: 1, name: "Admission Form", category: "Admission", updatedAt: "01 Aug 2026", status: "Completed" },
-        { id: 2, name: "Consent & Admission", category: "Consent", updatedAt: "01 Aug 2026", status: "Completed" },
-        { id: 3, name: "Weekly Vital Signs Check", category: "Clinical", updatedAt: "25 Aug 2026", status: "Active" },
-        { id: 4, name: "Monthly Glucose Check", category: "Clinical", updatedAt: "25 Aug 2026", status: "Active" },
-    ],
-    2: [], 3: [], 4: [],
+const loadCareRecords = async () => {
+    try {
+        setCareLoading(true);
+        setCareError("");
+
+        const response = await api.get(
+            `/residents/${id}/care-records`
+        );
+
+        setCareApiRecords(
+            Array.isArray(response.data?.care_records)
+                ? response.data.care_records
+                : []
+        );
+    } catch (error) {
+        console.error("Failed to load care records:", error);
+
+        setCareApiRecords([]);
+
+        setCareError(
+            error.response?.data?.message ||
+            "Unable to load care records. Please try again."
+        );
+    } finally {
+        setCareLoading(false);
+    }
+};
+
+useEffect(() => {
+    loadCareRecords();
+}, [id]);
+
+const [documentRecords, setDocumentRecords] = useState([]);
+const [documentsLoading, setDocumentsLoading] = useState(false);
+const [documentsError, setDocumentsError] = useState("");
+const [showDocumentForm, setShowDocumentForm] = useState(false);
+const [savingDocument, setSavingDocument] = useState(false);
+const [editingDocumentId, setEditingDocumentId] = useState(null);
+const [selectedDocumentFile, setSelectedDocumentFile] = useState(null);
+
+const [documentForm, setDocumentForm] = useState({
+    document_type: "Admission",
+    title: "",
+    notes: "",
+    status: "ACTIVE",
 });
 
-const [familyContacts, setFamilyContacts] = useState({
-    1: [
-        { id: 1, name: "Michael Victor", relationship: "Son", phone: "012-0000000", primary: true, whatsappEnabled: true },
-        { id: 2, name: "Sarah Victor", relationship: "Daughter", phone: "012-0000001", primary: false, whatsappEnabled: false },
-    ],
-    2: [{ id: 1, name: "Family Contact", relationship: "Daughter", phone: "012-0000000", primary: true, whatsappEnabled: true }],
-    3: [{ id: 1, name: "Family Contact", relationship: "Brother", phone: "012-0000000", primary: true, whatsappEnabled: true }],
-    4: [{ id: 1, name: "Family Contact", relationship: "Daughter", phone: "012-0000000", primary: true, whatsappEnabled: true }],
-});
+const documentTypeOptions = [
+    "Admission",
+    "Consent",
+    "Medical",
+    "Clinical",
+    "Lab Result",
+    "Medication",
+    "Care",
+    "Discharge",
+    "Home Leave",
+    "Identification",
+    "Other",
+];
 
+const loadResidentDocuments = async () => {
+    try {
+        setDocumentsLoading(true);
+        setDocumentsError("");
+
+        const response = await api.get(`/residents/${id}/documents`);
+
+        setDocumentRecords(
+            Array.isArray(response.data?.documents)
+                ? response.data.documents
+                : []
+        );
+    } catch (error) {
+        console.error("Failed to load resident documents:", error);
+        setDocumentRecords([]);
+        setDocumentsError(
+            error.response?.data?.message ||
+            "Unable to load resident documents. Please try again."
+        );
+    } finally {
+        setDocumentsLoading(false);
+    }
+};
+
+useEffect(() => {
+    loadResidentDocuments();
+}, [id]);
+
+const resetDocumentForm = () => {
+    setDocumentForm({
+        document_type: "Admission",
+        title: "",
+        notes: "",
+        status: "ACTIVE",
+    });
+    setSelectedDocumentFile(null);
+    setEditingDocumentId(null);
+};
+
+const openNewDocumentForm = () => {
+    resetDocumentForm();
+    setDocumentsError("");
+    setShowDocumentForm(true);
+};
+
+const openEditDocumentForm = (document) => {
+    setDocumentForm({
+        document_type: document.document_type || "Other",
+        title: document.title || "",
+        notes: document.notes || "",
+        status: document.status || "ACTIVE",
+    });
+    setSelectedDocumentFile(null);
+    setEditingDocumentId(document.id);
+    setDocumentsError("");
+    setShowDocumentForm(true);
+};
+
+const handleDocumentFormChange = (event) => {
+    const { name, value } = event.target;
+    setDocumentForm((current) => ({
+        ...current,
+        [name]: value,
+    }));
+};
+
+const handleDocumentFileChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setSelectedDocumentFile(file);
+
+    if (file && !documentForm.title.trim()) {
+        const titleFromFile = file.name.replace(/\.[^/.]+$/, "");
+        setDocumentForm((current) => ({
+            ...current,
+            title: titleFromFile,
+        }));
+    }
+};
+
+const handleSaveDocument = async (event) => {
+    event.preventDefault();
+
+    if (!documentForm.title.trim()) {
+        setDocumentsError("Please enter a document title.");
+        return;
+    }
+
+    if (!editingDocumentId && !selectedDocumentFile) {
+        setDocumentsError("Please choose a document to upload.");
+        return;
+    }
+
+    try {
+        setSavingDocument(true);
+        setDocumentsError("");
+
+        if (editingDocumentId) {
+            await api.put(`/resident-documents/${editingDocumentId}`, {
+                document_type: documentForm.document_type,
+                title: documentForm.title.trim(),
+                notes: documentForm.notes.trim() || null,
+                status: documentForm.status,
+            });
+        } else {
+            const payload = new FormData();
+            payload.append("document_type", documentForm.document_type);
+            payload.append("title", documentForm.title.trim());
+
+            if (documentForm.notes.trim()) {
+                payload.append("notes", documentForm.notes.trim());
+            }
+
+            payload.append("document", selectedDocumentFile);
+
+            await api.post(`/residents/${id}/documents`, payload, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+        }
+
+        await loadResidentDocuments();
+        setShowDocumentForm(false);
+        resetDocumentForm();
+    } catch (error) {
+        console.error("Failed to save resident document:", error);
+
+        if (error.response?.status === 422 && error.response?.data?.errors) {
+            const firstValidationError = Object.values(
+                error.response.data.errors
+            ).flat().find(Boolean);
+
+            setDocumentsError(
+                firstValidationError ||
+                "Please check the document information."
+            );
+        } else {
+            setDocumentsError(
+                error.response?.data?.message ||
+                "Unable to save the document. Please try again."
+            );
+        }
+    } finally {
+        setSavingDocument(false);
+    }
+};
+
+const handleDownloadDocument = async (document) => {
+    try {
+        setDocumentsError("");
+
+        const response = await api.get(
+            `/resident-documents/${document.id}/download`,
+            { responseType: "blob" }
+        );
+
+        const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+        const link = window.document.createElement("a");
+        link.href = blobUrl;
+        link.download = document.original_name || document.title || "resident-document";
+        window.document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+        console.error("Failed to download document:", error);
+        setDocumentsError(
+            error.response?.data?.message ||
+            "Unable to download the document. Please try again."
+        );
+    }
+};
+
+const handleArchiveDocument = async (document) => {
+    const nextStatus =
+        String(document.status || "").toUpperCase() === "ARCHIVED"
+            ? "ACTIVE"
+            : "ARCHIVED";
+
+    try {
+        setDocumentsError("");
+        await api.put(`/resident-documents/${document.id}`, {
+            status: nextStatus,
+        });
+        await loadResidentDocuments();
+    } catch (error) {
+        console.error("Failed to update document status:", error);
+        setDocumentsError(
+            error.response?.data?.message ||
+            "Unable to update the document status. Please try again."
+        );
+    }
+};
+
+const handleDeleteDocument = async (document) => {
+    const confirmed = window.confirm(
+        `Delete "${document.title}" from ${resident.name}'s documents? This will also remove the uploaded file.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        setDocumentsError("");
+        await api.delete(`/resident-documents/${document.id}`);
+        await loadResidentDocuments();
+    } catch (error) {
+        console.error("Failed to delete document:", error);
+        setDocumentsError(
+            error.response?.data?.message ||
+            "Unable to delete the document. Please try again."
+        );
+    }
+};
+
+const formatDocumentDate = (value) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleString("en-MY", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+const formatDocumentSize = (bytes) => {
+    const size = Number(bytes);
+    if (!Number.isFinite(size) || size <= 0) return "-";
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const [familyContacts, setFamilyContacts] = useState([]);
+const [familyLoading, setFamilyLoading] = useState(false);
+const [familyError, setFamilyError] = useState("");
 const [showFamilyForm, setShowFamilyForm] = useState(false);
-const [familyForm, setFamilyForm] = useState({ name: "", relationship: "", phone: "", whatsappEnabled: true });
+const [savingFamilyContact, setSavingFamilyContact] = useState(false);
+const [editingFamilyContactId, setEditingFamilyContactId] = useState(null);
+
+const [familyForm, setFamilyForm] = useState({
+    full_name: "",
+    relationship: "",
+    phone: "",
+    whatsapp_number: "",
+    is_primary: false,
+    is_emergency_contact: false,
+    whatsapp_enabled: true,
+    medication_notifications_enabled: true,
+    care_notifications_enabled: false,
+    notes: "",
+});
+
+const loadFamilyContacts = async () => {
+    try {
+        setFamilyLoading(true);
+        setFamilyError("");
+
+        const response = await api.get(`/residents/${id}/contacts`);
+
+        setFamilyContacts(
+            Array.isArray(response.data?.contacts)
+                ? response.data.contacts
+                : []
+        );
+    } catch (error) {
+        console.error("Failed to load family contacts:", error);
+        setFamilyContacts([]);
+        setFamilyError(
+            error.response?.data?.message ||
+            "Unable to load family contacts. Please try again."
+        );
+    } finally {
+        setFamilyLoading(false);
+    }
+};
+
+useEffect(() => {
+    loadFamilyContacts();
+}, [id]);
+
+const resetFamilyForm = () => {
+    setFamilyForm({
+        full_name: "",
+        relationship: "",
+        phone: "",
+        whatsapp_number: "",
+        is_primary: false,
+        is_emergency_contact: false,
+        whatsapp_enabled: true,
+        medication_notifications_enabled: true,
+        care_notifications_enabled: false,
+        notes: "",
+    });
+
+    setEditingFamilyContactId(null);
+};
+
+const openNewFamilyContact = () => {
+    resetFamilyForm();
+    setFamilyError("");
+    setShowFamilyForm(true);
+};
+
+const openEditFamilyContact = (contact) => {
+    setFamilyForm({
+        full_name: contact.full_name || "",
+        relationship: contact.relationship || "",
+        phone: contact.phone || "",
+        whatsapp_number: contact.whatsapp_number || "",
+        is_primary: Boolean(contact.is_primary),
+        is_emergency_contact: Boolean(contact.is_emergency_contact),
+        whatsapp_enabled: Boolean(contact.whatsapp_enabled),
+        medication_notifications_enabled: Boolean(contact.medication_notifications_enabled),
+        care_notifications_enabled: Boolean(contact.care_notifications_enabled),
+        notes: contact.notes || "",
+    });
+
+    setEditingFamilyContactId(contact.id);
+    setFamilyError("");
+    setShowFamilyForm(true);
+};
+
+const handleFamilyFormChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    setFamilyForm((current) => ({
+        ...current,
+        [name]: type === "checkbox" ? checked : value,
+    }));
+};
+
+const handleSaveFamilyContact = async (event) => {
+    event.preventDefault();
+
+    if (
+        !familyForm.full_name.trim() ||
+        !familyForm.relationship.trim() ||
+        !familyForm.phone.trim()
+    ) {
+        setFamilyError(
+            "Full name, relationship and phone number are required."
+        );
+        return;
+    }
+
+    try {
+        setSavingFamilyContact(true);
+        setFamilyError("");
+
+        const payload = {
+            full_name: familyForm.full_name.trim(),
+            relationship: familyForm.relationship.trim(),
+            phone: familyForm.phone.trim(),
+            whatsapp_number: familyForm.whatsapp_number.trim() || null,
+            is_primary: familyForm.is_primary,
+            is_emergency_contact: familyForm.is_emergency_contact,
+            whatsapp_enabled: familyForm.whatsapp_enabled,
+            medication_notifications_enabled: familyForm.medication_notifications_enabled,
+            care_notifications_enabled: familyForm.care_notifications_enabled,
+            notes: familyForm.notes.trim() || null,
+        };
+
+        if (editingFamilyContactId) {
+            await api.put(
+                `/resident-contacts/${editingFamilyContactId}`,
+                payload
+            );
+        } else {
+            await api.post(
+                `/residents/${id}/contacts`,
+                payload
+            );
+        }
+
+        await loadFamilyContacts();
+        setShowFamilyForm(false);
+        resetFamilyForm();
+    } catch (error) {
+        console.error("Failed to save family contact:", error);
+
+        if (
+            error.response?.status === 422 &&
+            error.response?.data?.errors
+        ) {
+            const firstValidationError = Object.values(
+                error.response.data.errors
+            ).flat().find(Boolean);
+
+            setFamilyError(
+                firstValidationError ||
+                "Please check the family contact information."
+            );
+        } else {
+            setFamilyError(
+                error.response?.data?.message ||
+                "Unable to save the family contact. Please try again."
+            );
+        }
+    } finally {
+        setSavingFamilyContact(false);
+    }
+};
+
+const handleDeleteFamilyContact = async (contact) => {
+    const confirmed = window.confirm(
+        `Delete ${contact.full_name} from ${resident.name}'s family contacts?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        setFamilyError("");
+        await api.delete(`/resident-contacts/${contact.id}`);
+        await loadFamilyContacts();
+    } catch (error) {
+        console.error("Failed to delete family contact:", error);
+        setFamilyError(
+            error.response?.data?.message ||
+            "Unable to delete the family contact. Please try again."
+        );
+    }
+};
 
 const [medicationSchedule, setMedicationSchedule] = useState({
     AM: [],
@@ -605,14 +1047,20 @@ const vitalTrendData = [...residentVitalHistory]
 
     emergencyContact: {
         name:
+            familyContacts.find((contact) => contact.is_primary)?.full_name ||
+            familyContacts.find((contact) => contact.is_emergency_contact)?.full_name ||
             residentApi.emergency_contact ||
             "No contact recorded",
 
         relationship:
+            familyContacts.find((contact) => contact.is_primary)?.relationship ||
+            familyContacts.find((contact) => contact.is_emergency_contact)?.relationship ||
             residentApi.emergency_relationship ||
             "-",
 
         phone:
+            familyContacts.find((contact) => contact.is_primary)?.phone ||
+            familyContacts.find((contact) => contact.is_emergency_contact)?.phone ||
             residentApi.emergency_phone ||
             "-",
     },
@@ -989,101 +1437,240 @@ const handleCompleteMedicationRound = async (round) => {
 
 const getMedicationRoundMessage = (round) =>
     `${resident.name} has taken the ${round.label} medication and ${round.meal.toLowerCase()}.`;
-const residentCare = careRecords[id] || { tasks: [], notes: [] };
-const completedCareTasks = residentCare.tasks.filter((task) => task.completed).length;
-const careProgress = residentCare.tasks.length
-    ? Math.round((completedCareTasks / residentCare.tasks.length) * 100)
-    : 0;
+const formatCareDateTime = (value) => {
+    if (!value) return "-";
 
-const handleCareTaskToggle = (taskId) => {
-    setCareRecords((current) => ({
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString("en-MY", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+const isCareRecordToday = (value) => {
+    if (!value) return false;
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return false;
+    }
+
+    const today = new Date();
+
+    return (
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate()
+    );
+};
+
+const todayCareRecords = careApiRecords.filter((record) =>
+    isCareRecordToday(record.recorded_at)
+);
+
+const completedCareRecords = todayCareRecords.filter(
+    (record) =>
+        String(record.care_status || "").toUpperCase() === "COMPLETED"
+);
+
+const attentionCareRecords = careApiRecords.filter(
+    (record) =>
+        String(record.care_status || "").toUpperCase() === "NEEDS_ATTENTION"
+);
+
+const observedCareRecords = careApiRecords.filter(
+    (record) =>
+        String(record.care_status || "").toUpperCase() === "OBSERVED"
+);
+
+const resetCareForm = () => {
+    setCareForm({
+        care_type: "Personal Care",
+        title: "",
+        notes: "",
+        care_status: "COMPLETED",
+        recorded_at: "",
+    });
+
+    setEditingCareRecordId(null);
+};
+
+const openNewCareRecord = () => {
+    resetCareForm();
+    setCareError("");
+    setShowCareForm(true);
+};
+
+const openEditCareRecord = (record) => {
+    let recordedAt = "";
+
+    if (record.recorded_at) {
+        const date = new Date(record.recorded_at);
+
+        if (!Number.isNaN(date.getTime())) {
+            const localDate = new Date(
+                date.getTime() - date.getTimezoneOffset() * 60000
+            );
+
+            recordedAt = localDate
+                .toISOString()
+                .slice(0, 16);
+        }
+    }
+
+    setCareForm({
+        care_type: record.care_type || "Personal Care",
+        title: record.title || "",
+        notes: record.notes || "",
+        care_status: record.care_status || "COMPLETED",
+        recorded_at: recordedAt,
+    });
+
+    setEditingCareRecordId(record.id);
+    setCareError("");
+    setShowCareForm(true);
+};
+
+const handleCareFormChange = (event) => {
+    const { name, value } = event.target;
+
+    setCareForm((current) => ({
         ...current,
-        [id]: {
-            ...(current[id] || { tasks: [], notes: [] }),
-            tasks: (current[id]?.tasks || []).map((task) =>
-                task.id === taskId
-                    ? {
-                        ...task,
-                        completed: !task.completed,
-                        completedAt: !task.completed ? new Date().toLocaleString() : null,
-                    }
-                    : task
-            ),
-        },
+        [name]: value,
     }));
 };
 
-const handleSaveCareNote = (event) => {
+const handleSaveCareRecord = async (event) => {
     event.preventDefault();
 
-    const note = careNote.trim();
-    if (!note) return;
+    if (!careForm.title.trim()) {
+        setCareError("Please enter a short care record title.");
+        return;
+    }
 
-    setCareRecords((current) => ({
-        ...current,
-        [id]: {
-            ...(current[id] || { tasks: [], notes: [] }),
-            tasks: current[id]?.tasks || [],
-            notes: [
-                {
-                    id: Date.now(),
-                    recordedAt: new Date().toLocaleString(),
-                    note,
-                },
-                ...(current[id]?.notes || []),
-            ],
-        },
-    }));
+    try {
+        setSavingCareRecord(true);
+        setCareError("");
 
-    setCareNote("");
+        const payload = {
+            care_type: careForm.care_type,
+            title: careForm.title.trim(),
+            notes: careForm.notes.trim() || null,
+            care_status: careForm.care_status,
+        };
+
+        if (careForm.recorded_at) {
+            payload.recorded_at = careForm.recorded_at;
+        }
+
+        if (editingCareRecordId) {
+            await api.put(
+                `/care-records/${editingCareRecordId}`,
+                payload
+            );
+        } else {
+            await api.post(
+                `/residents/${id}/care-records`,
+                payload
+            );
+        }
+
+        await loadCareRecords();
+
+        setShowCareForm(false);
+        resetCareForm();
+    } catch (error) {
+        console.error("Failed to save care record:", error);
+
+        if (
+            error.response?.status === 422 &&
+            error.response?.data?.errors
+        ) {
+            const firstValidationError = Object.values(
+                error.response.data.errors
+            )
+                .flat()
+                .find(Boolean);
+
+            setCareError(
+                firstValidationError ||
+                "Please check the care record information."
+            );
+        } else {
+            setCareError(
+                error.response?.data?.message ||
+                "Unable to save the care record. Please try again."
+            );
+        }
+    } finally {
+        setSavingCareRecord(false);
+    }
 };
 
-const residentDocuments = documentRecords[id] || [];
-const residentFamilyContacts = familyContacts[id] || [];
+const handleDeleteCareRecord = async (record) => {
+    const confirmed = window.confirm(
+        `Delete "${record.title}" from ${resident.name}'s care history?`
+    );
 
-const handleDocumentUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    if (!confirmed) return;
 
-    setDocumentRecords((current) => ({
-        ...current,
-        [id]: [
-            {
-                id: Date.now(),
-                name: file.name,
-                category: "Uploaded Document",
-                updatedAt: new Date().toLocaleDateString(),
-                status: "Uploaded",
-            },
-            ...(current[id] || []),
-        ],
-    }));
+    try {
+        setCareError("");
 
-    event.target.value = "";
+        await api.delete(
+            `/care-records/${record.id}`
+        );
+
+        await loadCareRecords();
+    } catch (error) {
+        console.error("Failed to delete care record:", error);
+
+        setCareError(
+            error.response?.data?.message ||
+            "Unable to delete the care record. Please try again."
+        );
+    }
 };
 
-const handleAddFamilyContact = (event) => {
-    event.preventDefault();
-    if (!familyForm.name.trim() || !familyForm.relationship.trim() || !familyForm.phone.trim()) return;
+const getCareStatusStyle = (status) => {
+    const normalized = String(status || "").toUpperCase();
 
-    setFamilyContacts((current) => ({
-        ...current,
-        [id]: [
-            ...(current[id] || []),
-            {
-                id: Date.now(),
-                name: familyForm.name.trim(),
-                relationship: familyForm.relationship.trim(),
-                phone: familyForm.phone.trim(),
-                primary: (current[id] || []).length === 0,
-                whatsappEnabled: familyForm.whatsappEnabled,
-            },
-        ],
-    }));
+    if (normalized === "COMPLETED") {
+        return "bg-emerald-50 text-emerald-700";
+    }
 
-    setFamilyForm({ name: "", relationship: "", phone: "", whatsappEnabled: true });
-    setShowFamilyForm(false);
+    if (normalized === "NEEDS_ATTENTION") {
+        return "bg-rose-50 text-rose-700";
+    }
+
+    return "bg-amber-50 text-amber-700";
 };
+
+const getCareStatusLabel = (status) => {
+    const normalized = String(status || "").toUpperCase();
+
+    if (normalized === "NEEDS_ATTENTION") {
+        return "Needs Attention";
+    }
+
+    if (normalized === "OBSERVED") {
+        return "Observed";
+    }
+
+    return "Completed";
+};
+
+const residentDocuments = documentRecords;
+const residentFamilyContacts = familyContacts;
 
 const timelineEntries = [
     ...residentVitalHistory.slice(0, 4).map((record) => ({
@@ -1102,12 +1689,14 @@ const timelineEntries = [
             entry.completed_by ? ` • Recorded by ${entry.completed_by}` : ""
         }`,
     })),
-    ...residentCare.notes.slice(0, 4).map((entry) => ({
+    ...careApiRecords.slice(0, 6).map((entry) => ({
         id: `care-${entry.id}`,
         type: "Care",
-        title: "Care note recorded",
-        time: entry.recordedAt,
-        detail: entry.note,
+        title: entry.title || "Care record",
+        time: formatCareDateTime(entry.recorded_at),
+        detail: `${entry.care_type || "Care"} • ${getCareStatusLabel(entry.care_status)}${
+            (entry.recorder?.full_name || entry.recorder?.name) ? ` • Recorded by ${entry.recorder?.full_name || entry.recorder?.name}` : ""
+        }${entry.notes ? ` • ${entry.notes}` : ""}`,
     })),
     {
         id: "admission",
@@ -3551,165 +4140,634 @@ const timelineEntries = [
 {
     activeTab === "care" && (
 
-        <div className="space-y-6">
+        <div className="w-full min-w-0 space-y-5 sm:space-y-6">
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">Daily Care</h2>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Complete routine care tasks and record short nursing observations for {resident.name}.
-                        </p>
+            {/* Care heading */}
+            <section className="
+                w-full
+                min-w-0
+                overflow-hidden
+                rounded-2xl
+                border
+                border-slate-200
+                bg-white
+                p-4
+                shadow-sm
+                sm:p-6
+            ">
+                <div className="
+                    flex
+                    flex-col
+                    gap-4
+                    lg:flex-row
+                    lg:items-center
+                    lg:justify-between
+                ">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                            <div className="
+                                hidden
+                                h-11
+                                w-11
+                                shrink-0
+                                items-center
+                                justify-center
+                                rounded-xl
+                                bg-blue-50
+                                text-xl
+                                sm:flex
+                            ">
+                                🩺
+                            </div>
+
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">
+                                    Care Records
+                                </h2>
+
+                                <p className="mt-1 text-sm leading-6 text-slate-500">
+                                    Record personal care, nutrition, mobility, nursing observations and other care activities for {resident.name}.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="min-w-[220px] rounded-xl bg-slate-50 p-4">
-                        <div className="flex items-center justify-between text-sm">
-                            <span className="font-semibold text-slate-700">Today's progress</span>
-                            <span className="font-bold text-blue-700">{careProgress}%</span>
-                        </div>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-                            <div
-                                className="h-full rounded-full bg-blue-600 transition-all"
-                                style={{ width: `${careProgress}%` }}
-                            />
-                        </div>
-                        <p className="mt-2 text-xs text-slate-500">
-                            {completedCareTasks} of {residentCare.tasks.length} routine care tasks completed
-                        </p>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={openNewCareRecord}
+                        className="
+                            w-full
+                            rounded-xl
+                            bg-blue-600
+                            px-5
+                            py-3
+                            text-sm
+                            font-semibold
+                            text-white
+                            transition
+                            hover:bg-blue-700
+                            sm:w-auto
+                        "
+                    >
+                        + Add Care Record
+                    </button>
                 </div>
-            </div>
+            </section>
 
-            <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-                <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-                    <div className="border-b border-slate-200 p-6">
-                        <h3 className="text-lg font-bold text-slate-800">Today's Care Checklist</h3>
+            {careError && (
+                <div className="
+                    rounded-2xl
+                    border
+                    border-red-200
+                    bg-red-50
+                    px-5
+                    py-4
+                    text-sm
+                    font-medium
+                    text-red-700
+                ">
+                    {careError}
+                </div>
+            )}
+
+            {/* Today summary */}
+            <section className="
+                grid
+                grid-cols-2
+                gap-3
+                sm:grid-cols-4
+                sm:gap-4
+            ">
+                <CareSummaryCard
+                    label="Today"
+                    value={todayCareRecords.length}
+                    detail="care records"
+                    tone="blue"
+                />
+
+                <CareSummaryCard
+                    label="Completed"
+                    value={completedCareRecords.length}
+                    detail="today"
+                    tone="green"
+                />
+
+                <CareSummaryCard
+                    label="Observed"
+                    value={observedCareRecords.length}
+                    detail="all records"
+                    tone="amber"
+                />
+
+                <CareSummaryCard
+                    label="Needs Attention"
+                    value={attentionCareRecords.length}
+                    detail="requires review"
+                    tone="red"
+                />
+            </section>
+
+            {/* Add/Edit form */}
+            {showCareForm && (
+                <section className="
+                    overflow-hidden
+                    rounded-2xl
+                    border
+                    border-blue-200
+                    bg-white
+                    shadow-sm
+                ">
+                    <div className="border-b border-slate-200 bg-blue-50 px-4 py-5 sm:px-6">
+                        <h3 className="text-lg font-bold text-slate-800">
+                            {editingCareRecordId
+                                ? "Edit Care Record"
+                                : "Add Care Record"}
+                        </h3>
+
                         <p className="mt-1 text-sm text-slate-500">
-                            Tick an item only after the care activity has been completed.
+                            Resident: {resident.name}. The logged-in user will be recorded automatically.
                         </p>
                     </div>
 
-                    <div className="divide-y divide-slate-100">
-                        {residentCare.tasks.map((task) => (
-                            <label
-                                key={task.id}
-                                className={`flex cursor-pointer items-start gap-4 p-5 transition ${
-                                    task.completed ? "bg-emerald-50/60" : "hover:bg-slate-50"
-                                }`}
-                            >
-                                <input
-                                    type="checkbox"
-                                    checked={task.completed}
-                                    onChange={() => handleCareTaskToggle(task.id)}
-                                    className="mt-1 h-5 w-5"
-                                />
+                    <form
+                        onSubmit={handleSaveCareRecord}
+                        className="space-y-5 p-4 sm:p-6"
+                    >
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Care Type *
+                                </label>
 
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <p className="font-semibold text-slate-800">{task.label}</p>
-                                            <p className="mt-1 text-sm text-slate-500">{task.category}</p>
-                                        </div>
+                                <select
+                                    name="care_type"
+                                    value={careForm.care_type}
+                                    onChange={handleCareFormChange}
+                                    className="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-slate-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        outline-none
+                                        focus:border-blue-500
+                                        focus:ring-4
+                                        focus:ring-blue-100
+                                    "
+                                >
+                                    {careTypeOptions.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                        <span
-                                            className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${
-                                                task.completed
-                                                    ? "bg-emerald-100 text-emerald-700"
-                                                    : "bg-amber-50 text-amber-700"
-                                            }`}
-                                        >
-                                            {task.completed ? "Completed" : "Pending"}
-                                        </span>
-                                    </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Status *
+                                </label>
 
-                                    {task.completedAt && (
-                                        <p className="mt-2 text-xs text-emerald-700">
-                                            Completed • {task.completedAt}
-                                        </p>
-                                    )}
-                                </div>
+                                <select
+                                    name="care_status"
+                                    value={careForm.care_status}
+                                    onChange={handleCareFormChange}
+                                    className="
+                                        w-full
+                                        rounded-xl
+                                        border
+                                        border-slate-300
+                                        bg-white
+                                        px-4
+                                        py-3
+                                        outline-none
+                                        focus:border-blue-500
+                                        focus:ring-4
+                                        focus:ring-blue-100
+                                    "
+                                >
+                                    <option value="COMPLETED">Completed</option>
+                                    <option value="OBSERVED">Observed</option>
+                                    <option value="NEEDS_ATTENTION">Needs Attention</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                Short Description *
                             </label>
-                        ))}
-                    </div>
-                </div>
 
-                <div className="space-y-6">
-                    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800">Add Care Note</h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                            Record only important observations or changes noticed during care.
-                        </p>
-
-                        <form onSubmit={handleSaveCareNote} className="mt-5">
-                            <textarea
-                                rows="5"
-                                value={careNote}
-                                onChange={(event) => setCareNote(event.target.value)}
-                                placeholder="Example: Resident needed assistance while walking to the dining area..."
-                                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500"
+                            <input
+                                type="text"
+                                name="title"
+                                value={careForm.title}
+                                onChange={handleCareFormChange}
+                                placeholder="Example: Morning hygiene completed"
+                                maxLength={255}
+                                className="
+                                    w-full
+                                    rounded-xl
+                                    border
+                                    border-slate-300
+                                    px-4
+                                    py-3
+                                    outline-none
+                                    focus:border-blue-500
+                                    focus:ring-4
+                                    focus:ring-blue-100
+                                "
                             />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                Notes
+                            </label>
+
+                            <textarea
+                                rows="4"
+                                name="notes"
+                                value={careForm.notes}
+                                onChange={handleCareFormChange}
+                                placeholder="Optional nursing observation or additional information..."
+                                className="
+                                    w-full
+                                    resize-y
+                                    rounded-xl
+                                    border
+                                    border-slate-300
+                                    px-4
+                                    py-3
+                                    outline-none
+                                    focus:border-blue-500
+                                    focus:ring-4
+                                    focus:ring-blue-100
+                                "
+                            />
+                        </div>
+
+                        <div className="max-w-md">
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                Date & Time
+                            </label>
+
+                            <input
+                                type="datetime-local"
+                                name="recorded_at"
+                                value={careForm.recorded_at}
+                                onChange={handleCareFormChange}
+                                className="
+                                    w-full
+                                    rounded-xl
+                                    border
+                                    border-slate-300
+                                    px-4
+                                    py-3
+                                    outline-none
+                                    focus:border-blue-500
+                                    focus:ring-4
+                                    focus:ring-blue-100
+                                "
+                            />
+
+                            <p className="mt-2 text-xs text-slate-400">
+                                Leave blank to use the current date and time.
+                            </p>
+                        </div>
+
+                        <div className="
+                            flex
+                            flex-col-reverse
+                            gap-3
+                            border-t
+                            border-slate-100
+                            pt-5
+                            sm:flex-row
+                            sm:justify-end
+                        ">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowCareForm(false);
+                                    resetCareForm();
+                                    setCareError("");
+                                }}
+                                className="
+                                    rounded-xl
+                                    border
+                                    border-slate-300
+                                    px-5
+                                    py-3
+                                    font-semibold
+                                    text-slate-700
+                                    hover:bg-slate-50
+                                "
+                            >
+                                Cancel
+                            </button>
 
                             <button
                                 type="submit"
-                                disabled={!careNote.trim()}
-                                className={`mt-3 w-full rounded-lg px-5 py-3 font-semibold ${
-                                    careNote.trim()
-                                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                                        : "cursor-not-allowed bg-slate-100 text-slate-400"
-                                }`}
+                                disabled={savingCareRecord}
+                                className="
+                                    rounded-xl
+                                    bg-blue-600
+                                    px-6
+                                    py-3
+                                    font-semibold
+                                    text-white
+                                    hover:bg-blue-700
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-60
+                                "
                             >
-                                Save Care Note
+                                {savingCareRecord
+                                    ? "Saving..."
+                                    : editingCareRecordId
+                                        ? "Update Care Record"
+                                        : "Save Care Record"}
                             </button>
-                        </form>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-800">Current Care Status</h3>
-                        <div className="mt-4 rounded-lg bg-emerald-50 p-4">
-                            <p className="text-sm font-semibold text-emerald-800">{resident.careStatus}</p>
-                            <p className="mt-1 text-sm leading-6 text-emerald-700">
-                                Continue routine care and escalate any meaningful change to the nurse in charge.
-                            </p>
                         </div>
+                    </form>
+                </section>
+            )}
+
+            {/* Care history */}
+            <section className="
+                w-full
+                min-w-0
+                overflow-hidden
+                rounded-2xl
+                border
+                border-slate-200
+                bg-white
+                shadow-sm
+            ">
+                <div className="
+                    flex
+                    flex-col
+                    gap-3
+                    border-b
+                    border-slate-200
+                    p-4
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                    sm:p-6
+                ">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-800">
+                            Care History
+                        </h3>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                            Care activities and observations recorded for this resident.
+                        </p>
                     </div>
-                </div>
-            </div>
 
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-200 p-6">
-                    <h3 className="text-lg font-bold text-slate-800">Care Notes History</h3>
-                    <p className="mt-1 text-sm text-slate-500">
-                        Recent nursing and daily-care observations for this resident.
-                    </p>
+                    <span className="
+                        w-fit
+                        rounded-full
+                        bg-slate-100
+                        px-3
+                        py-1
+                        text-xs
+                        font-semibold
+                        text-slate-600
+                    ">
+                        {careApiRecords.length} record{careApiRecords.length === 1 ? "" : "s"}
+                    </span>
                 </div>
 
-                {residentCare.notes.length > 0 ? (
+                {careLoading ? (
+                    <div className="p-8 text-center text-sm text-slate-500">
+                        Loading care records...
+                    </div>
+                ) : careApiRecords.length > 0 ? (
                     <div className="divide-y divide-slate-100">
-                        {residentCare.notes.map((entry) => (
-                            <div key={entry.id} className="p-5">
-                                <p className="text-sm text-slate-700">{entry.note}</p>
-                                <p className="mt-2 text-xs text-slate-400">{entry.recordedAt}</p>
-                            </div>
+                        {careApiRecords.map((record) => (
+                            <article
+                                key={record.id}
+                                className="
+                                    p-4
+                                    transition
+                                    hover:bg-slate-50
+                                    sm:p-5
+                                    lg:p-6
+                                "
+                            >
+                                <div className="
+                                    flex
+                                    flex-col
+                                    gap-4
+                                    lg:flex-row
+                                    lg:items-start
+                                    lg:justify-between
+                                ">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="
+                                                rounded-full
+                                                bg-blue-50
+                                                px-3
+                                                py-1
+                                                text-xs
+                                                font-semibold
+                                                text-blue-700
+                                            ">
+                                                {record.care_type || "Care"}
+                                            </span>
+
+                                            <span
+                                                className={`rounded-full px-3 py-1 text-xs font-semibold ${getCareStatusStyle(
+                                                    record.care_status
+                                                )}`}
+                                            >
+                                                {getCareStatusLabel(record.care_status)}
+                                            </span>
+                                        </div>
+
+                                        <h4 className="
+                                            mt-3
+                                            break-words
+                                            text-base
+                                            font-bold
+                                            text-slate-800
+                                            sm:text-lg
+                                        ">
+                                            {record.title}
+                                        </h4>
+
+                                        {record.notes && (
+                                            <p className="
+                                                mt-2
+                                                break-words
+                                                text-sm
+                                                leading-6
+                                                text-slate-600
+                                            ">
+                                                {record.notes}
+                                            </p>
+                                        )}
+
+                                        <div className="
+                                            mt-4
+                                            flex
+                                            flex-wrap
+                                            gap-x-4
+                                            gap-y-2
+                                            text-xs
+                                            text-slate-400
+                                        ">
+                                            <span>
+                                                {formatCareDateTime(record.recorded_at)}
+                                            </span>
+
+                                            <span>
+                                                Recorded by {record.recorder?.full_name || record.recorder?.name || "System / Unassigned"}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex shrink-0 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => openEditCareRecord(record)}
+                                            className="
+                                                rounded-lg
+                                                border
+                                                border-slate-300
+                                                px-4
+                                                py-2
+                                                text-sm
+                                                font-semibold
+                                                text-slate-700
+                                                hover:border-blue-300
+                                                hover:bg-blue-50
+                                                hover:text-blue-700
+                                            "
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteCareRecord(record)}
+                                            className="
+                                                rounded-lg
+                                                border
+                                                border-rose-200
+                                                px-4
+                                                py-2
+                                                text-sm
+                                                font-semibold
+                                                text-rose-600
+                                                hover:bg-rose-50
+                                            "
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
                         ))}
                     </div>
                 ) : (
-                    <div className="p-8 text-center text-sm text-slate-500">
-                        No care notes have been recorded yet.
+                    <div className="
+                        flex
+                        min-h-[240px]
+                        items-center
+                        justify-center
+                        p-6
+                        text-center
+                    ">
+                        <div className="max-w-md">
+                            <div className="
+                                mx-auto
+                                flex
+                                h-14
+                                w-14
+                                items-center
+                                justify-center
+                                rounded-full
+                                bg-blue-50
+                                text-2xl
+                            ">
+                                🩺
+                            </div>
+
+                            <h4 className="mt-4 font-bold text-slate-800">
+                                No care records yet
+                            </h4>
+
+                            <p className="mt-2 text-sm leading-6 text-slate-500">
+                                Add the first care record after completing a care activity or recording an important observation.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={openNewCareRecord}
+                                className="
+                                    mt-5
+                                    rounded-xl
+                                    bg-blue-600
+                                    px-5
+                                    py-3
+                                    text-sm
+                                    font-semibold
+                                    text-white
+                                    hover:bg-blue-700
+                                "
+                            >
+                                + Add First Care Record
+                            </button>
+                        </div>
                     </div>
                 )}
-            </div>
+            </section>
 
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5">
-                <p className="text-sm leading-6 text-slate-600">
-                    This is currently frontend test data. When we connect the Laravel API, each completed care task and note will be stored against the resident together with the nurse and timestamp.
-                </p>
-            </div>
+            <section className="
+                rounded-2xl
+                border
+                border-blue-100
+                bg-blue-50
+                p-5
+                sm:p-6
+            ">
+                <div className="flex items-start gap-3">
+                    <div className="
+                        flex
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        bg-blue-600
+                        text-white
+                    ">
+                        ✓
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-slate-800">
+                            One Care Entry, Used Across SmartCare
+                        </h3>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                            Care records are now stored against the selected resident in Laravel. The same records also appear in the resident Timeline, so nurses do not need to enter the same information twice.
+                        </p>
+                    </div>
+                </div>
+            </section>
 
         </div>
 
     )
 }
-
 
 {/* AI INSIGHTS TAB */}
 {
@@ -3733,7 +4791,15 @@ const timelineEntries = [
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <InsightCard title="Latest Vitals" value={`${resident.latestVitals.bloodPressure} BP`} detail={`SpO₂ ${resident.latestVitals.spo2} • Glucose ${resident.latestVitals.glucose}`} />
-                <InsightCard title="Care Progress" value={`${careProgress}% complete`} detail={`${completedCareTasks} of ${residentCare.tasks.length} daily care tasks completed`} />
+                <InsightCard
+                    title="Care Activity"
+                    value={`${todayCareRecords.length} today`}
+                    detail={
+                        attentionCareRecords.length > 0
+                            ? `${attentionCareRecords.length} care record(s) need attention`
+                            : "No care records currently need attention"
+                    }
+                />
                 <InsightCard title="Medication" value={`${completedMedicationRounds}/3 rounds`} detail="Medication rounds require nurse confirmation before completion." />
             </div>
 
@@ -3743,7 +4809,16 @@ const timelineEntries = [
                     <div className="mt-5 space-y-3">
                         <AIActionRow priority={resident.careStatus === "Needs Review" ? "High" : "Routine"} text={resident.careStatus === "Needs Review" ? "Review the latest observations and repeat abnormal vital signs if clinically appropriate." : "Continue routine monitoring and scheduled care."} />
                         <AIActionRow priority="Routine" text={`${3 - completedMedicationRounds} medication round(s) remain pending today.`} />
-                        <AIActionRow priority="Routine" text={`${residentCare.tasks.filter((task) => !task.completed).length} daily care task(s) remain pending.`} />
+                        <AIActionRow
+                            priority={attentionCareRecords.length > 0 ? "High" : "Routine"}
+                            text={
+                                attentionCareRecords.length > 0
+                                    ? `${attentionCareRecords.length} care record(s) are marked as needing attention.`
+                                    : todayCareRecords.length > 0
+                                        ? `${todayCareRecords.length} care record(s) have been recorded today.`
+                                        : "No care records have been entered today."
+                            }
+                        />
                     </div>
                 </div>
 
@@ -3797,49 +4872,262 @@ const timelineEntries = [
 {/* DOCUMENTS TAB */}
 {
     activeTab === "documents" && (
-        <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">Documents & Forms</h2>
-                        <p className="mt-1 text-sm text-slate-500">Resident forms and supporting records are kept together here.</p>
+        <div className="w-full min-w-0 space-y-5 sm:space-y-6">
+
+            <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                        <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl sm:flex">📄</div>
+                        <div className="min-w-0">
+                            <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">Documents & Forms</h2>
+                            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+                                Upload and manage resident documents in one place. Nurses and management can keep admission, consent, clinical, discharge and supporting records linked directly to {resident.name}.
+                            </p>
+                        </div>
                     </div>
-                    <label className="cursor-pointer rounded-lg bg-blue-600 px-5 py-3 text-center font-semibold text-white hover:bg-blue-700">
+
+                    <button
+                        type="button"
+                        onClick={openNewDocumentForm}
+                        className="w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
+                    >
                         + Upload Document
-                        <input type="file" className="hidden" onChange={handleDocumentUpload} />
-                    </label>
+                    </button>
                 </div>
-            </div>
+            </section>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {["Admission & Consent", "Clinical Monitoring", "Leave / Discharge", "Other Records"].map((label) => (
-                    <div key={label} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-sm font-medium text-slate-500">{label}</p>
-                        <p className="mt-2 text-2xl font-bold text-slate-800">{label === "Clinical Monitoring" ? residentDocuments.filter((d) => d.category === "Clinical").length : residentDocuments.filter((d) => d.category !== "Clinical").length}</p>
+            {documentsError && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+                    {documentsError}
+                </div>
+            )}
+
+            <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                <DocumentSummaryCard label="Total" value={residentDocuments.length} detail="documents" tone="blue" />
+                <DocumentSummaryCard
+                    label="Active"
+                    value={residentDocuments.filter((document) => String(document.status || "").toUpperCase() !== "ARCHIVED").length}
+                    detail="available"
+                    tone="green"
+                />
+                <DocumentSummaryCard
+                    label="Clinical"
+                    value={residentDocuments.filter((document) => ["MEDICAL", "CLINICAL", "LAB RESULT", "MEDICATION", "CARE"].includes(String(document.document_type || "").toUpperCase())).length}
+                    detail="clinical"
+                    tone="amber"
+                />
+                <DocumentSummaryCard
+                    label="Archived"
+                    value={residentDocuments.filter((document) => String(document.status || "").toUpperCase() === "ARCHIVED").length}
+                    detail="records"
+                    tone="slate"
+                />
+            </section>
+
+            {showDocumentForm && (
+                <section className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-200 bg-blue-50 px-4 py-5 sm:px-6">
+                        <h3 className="text-lg font-bold text-slate-800">
+                            {editingDocumentId ? "Edit Document Details" : "Upload Resident Document"}
+                        </h3>
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                            {editingDocumentId
+                                ? "Update the document title, category, notes or archive status. The original uploaded file is not replaced."
+                                : `Choose a file for ${resident.name}. The logged-in user will be recorded automatically.`}
+                        </p>
                     </div>
-                ))}
-            </div>
 
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-200 p-6"><h3 className="text-lg font-bold text-slate-800">Resident Records</h3></div>
-                {residentDocuments.length ? (
-                    <div className="divide-y divide-slate-100">
-                        {residentDocuments.map((doc) => (
-                            <div key={doc.id} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <p className="font-semibold text-slate-800">{doc.name}</p>
-                                    <p className="mt-1 text-sm text-slate-500">{doc.category} • Updated {doc.updatedAt}</p>
-                                </div>
-                                <span className="w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">{doc.status}</span>
+                    <form onSubmit={handleSaveDocument} className="space-y-6 p-4 sm:p-6">
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">Document Type *</label>
+                                <select
+                                    name="document_type"
+                                    value={documentForm.document_type}
+                                    onChange={handleDocumentFormChange}
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                >
+                                    {documentTypeOptions.map((type) => (
+                                        <option key={type} value={type}>{type}</option>
+                                    ))}
+                                </select>
                             </div>
-                        ))}
-                    </div>
-                ) : <div className="p-8 text-center text-sm text-slate-500">No documents have been added yet.</div>}
-            </div>
 
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 text-sm leading-6 text-slate-600">
-                The paper admission, consent, discharge, glucose, weekly vital-sign, home-leave and other forms will be converted into structured digital workflows. File upload here is currently a frontend demonstration only.
-            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">Title *</label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={documentForm.title}
+                                    onChange={handleDocumentFormChange}
+                                    placeholder="Example: Admission Consent Form"
+                                    maxLength={255}
+                                    className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                />
+                            </div>
+                        </div>
+
+                        {!editingDocumentId && (
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">File *</label>
+                                <label className="flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-5 text-center transition hover:border-blue-300 hover:bg-blue-50">
+                                    <div className="text-3xl">📎</div>
+                                    <p className="mt-3 font-semibold text-slate-700">
+                                        {selectedDocumentFile ? selectedDocumentFile.name : "Choose document"}
+                                    </p>
+                                    <p className="mt-1 text-xs leading-5 text-slate-400">PDF, JPG, PNG, DOC or DOCX • Maximum 10 MB</p>
+                                    <input
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                        onChange={handleDocumentFileChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                            </div>
+                        )}
+
+                        {editingDocumentId && (
+                            <div>
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+                                <select
+                                    name="status"
+                                    value={documentForm.status}
+                                    onChange={handleDocumentFormChange}
+                                    className="w-full max-w-md rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                >
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="ARCHIVED">Archived</option>
+                                </select>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">Notes</label>
+                            <textarea
+                                rows="4"
+                                name="notes"
+                                value={documentForm.notes}
+                                onChange={handleDocumentFormChange}
+                                placeholder="Optional notes about this document..."
+                                className="w-full resize-y rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            />
+                        </div>
+
+                        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowDocumentForm(false);
+                                    resetDocumentForm();
+                                    setDocumentsError("");
+                                }}
+                                className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={savingDocument}
+                                className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {savingDocument ? "Saving..." : editingDocumentId ? "Update Document" : "Upload Document"}
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
+
+            <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-800">Resident Documents</h3>
+                        <p className="mt-1 text-sm text-slate-500">Uploaded files and supporting records for this resident.</p>
+                    </div>
+                    <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                        {residentDocuments.length} document{residentDocuments.length === 1 ? "" : "s"}
+                    </span>
+                </div>
+
+                {documentsLoading ? (
+                    <div className="p-8 text-center text-sm text-slate-500">Loading resident documents...</div>
+                ) : residentDocuments.length > 0 ? (
+                    <div className="divide-y divide-slate-100">
+                        {residentDocuments.map((document) => {
+                            const archived = String(document.status || "").toUpperCase() === "ARCHIVED";
+
+                            return (
+                                <article key={document.id} className="p-4 transition hover:bg-slate-50 sm:p-5 lg:p-6">
+                                    <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                                        <div className="flex min-w-0 flex-1 items-start gap-4">
+                                            <div className={`hidden h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl sm:flex ${archived ? "bg-slate-100" : "bg-blue-50"}`}>
+                                                {String(document.mime_type || "").includes("pdf")
+                                                    ? "📕"
+                                                    : String(document.mime_type || "").includes("image")
+                                                        ? "🖼️"
+                                                        : "📄"}
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                                        {document.document_type || "Other"}
+                                                    </span>
+                                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${archived ? "bg-slate-100 text-slate-600" : "bg-emerald-50 text-emerald-700"}`}>
+                                                        {archived ? "Archived" : "Active"}
+                                                    </span>
+                                                </div>
+
+                                                <h4 className="mt-3 break-words text-base font-bold text-slate-800 sm:text-lg">{document.title}</h4>
+                                                <p className="mt-1 break-all text-sm text-slate-500">{document.original_name || "Uploaded document"}</p>
+
+                                                {document.notes && (
+                                                    <p className="mt-3 break-words text-sm leading-6 text-slate-600">{document.notes}</p>
+                                                )}
+
+                                                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-slate-400">
+                                                    <span>Uploaded {formatDocumentDate(document.created_at)}</span>
+                                                    <span>{formatDocumentSize(document.file_size)}</span>
+                                                    <span>By {document.uploader?.full_name || "System / Unassigned"}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2 xl:justify-end">
+                                            <button type="button" onClick={() => handleDownloadDocument(document)} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Download</button>
+                                            <button type="button" onClick={() => openEditDocumentForm(document)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700">Edit</button>
+                                            <button type="button" onClick={() => handleArchiveDocument(document)} className="rounded-lg border border-amber-200 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50">{archived ? "Restore" : "Archive"}</button>
+                                            <button type="button" onClick={() => handleDeleteDocument(document)} className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50">Delete</button>
+                                        </div>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="flex min-h-[250px] items-center justify-center p-6 text-center">
+                        <div className="max-w-md">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">📄</div>
+                            <h4 className="mt-4 font-bold text-slate-800">No documents uploaded yet</h4>
+                            <p className="mt-2 text-sm leading-6 text-slate-500">Upload the resident's first admission, consent, clinical or supporting document.</p>
+                            <button type="button" onClick={openNewDocumentForm} className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700">+ Upload First Document</button>
+                        </div>
+                    </div>
+                )}
+            </section>
+
+            <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">🧾</div>
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-slate-800">Digital Forms Are the Next Layer</h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                            Uploaded files are now stored permanently against the resident. Admission, consent, discharge, monthly glucose, weekly vital-sign, home-leave, visitor and parcel forms can next be converted into structured SmartCare workflows instead of relying only on scans.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
         </div>
     )
 }
@@ -3847,62 +5135,352 @@ const timelineEntries = [
 {/* FAMILY TAB */}
 {
     activeTab === "family" && (
-        <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">Family & Contacts</h2>
-                        <p className="mt-1 text-sm text-slate-500">Management or nurses can maintain family contacts and WhatsApp notification preferences.</p>
-                    </div>
-                    <button type="button" onClick={() => setShowFamilyForm((v) => !v)} className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">+ Add Family Contact</button>
-                </div>
-            </div>
+        <div className="w-full min-w-0 space-y-5 sm:space-y-6">
 
-            {showFamilyForm && (
-                <form onSubmit={handleAddFamilyContact} className="rounded-xl border border-blue-200 bg-white p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-slate-800">New Family Contact</h3>
-                    <div className="mt-5 grid gap-4 md:grid-cols-3">
-                        <SimpleInput label="Full Name" value={familyForm.name} onChange={(value) => setFamilyForm((c) => ({...c, name:value}))} />
-                        <SimpleInput label="Relationship" value={familyForm.relationship} onChange={(value) => setFamilyForm((c) => ({...c, relationship:value}))} />
-                        <SimpleInput label="Phone Number" value={familyForm.phone} onChange={(value) => setFamilyForm((c) => ({...c, phone:value}))} />
+            <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                            <div className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xl sm:flex">
+                                👪
+                            </div>
+
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">
+                                    Family & Contacts
+                                </h2>
+
+                                <p className="mt-1 text-sm leading-6 text-slate-500">
+                                    Nurses and management can maintain family, emergency and WhatsApp notification details for {resident.name}.
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <label className="mt-4 flex items-center gap-3 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
-                        <input type="checkbox" checked={familyForm.whatsappEnabled} onChange={(e) => setFamilyForm((c) => ({...c, whatsappEnabled:e.target.checked}))} />
-                        Receive WhatsApp care and medication notifications
-                    </label>
-                    <div className="mt-5 flex justify-end gap-3">
-                        <button type="button" onClick={() => setShowFamilyForm(false)} className="rounded-lg border border-slate-300 px-5 py-3 font-semibold text-slate-700">Cancel</button>
-                        <button type="submit" className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white">Save Contact</button>
-                    </div>
-                </form>
+
+                    <button
+                        type="button"
+                        onClick={openNewFamilyContact}
+                        className="w-full rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 sm:w-auto"
+                    >
+                        + Add Family Contact
+                    </button>
+                </div>
+            </section>
+
+            {familyError && (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
+                    {familyError}
+                </div>
             )}
 
-            <div className="grid gap-5 lg:grid-cols-2">
-                {residentFamilyContacts.map((contact) => (
-                    <div key={contact.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <div className="flex items-start justify-between gap-4">
-                            <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-lg font-bold text-slate-800">{contact.name}</h3>
-                                    {contact.primary && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">Primary</span>}
-                                </div>
-                                <p className="mt-1 text-sm text-slate-500">{contact.relationship}</p>
-                            </div>
-                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${contact.whatsappEnabled ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{contact.whatsappEnabled ? "WhatsApp On" : "WhatsApp Off"}</span>
+            {showFamilyForm && (
+                <section className="overflow-hidden rounded-2xl border border-blue-200 bg-white shadow-sm">
+                    <div className="border-b border-slate-200 bg-blue-50 px-4 py-5 sm:px-6">
+                        <h3 className="text-lg font-bold text-slate-800">
+                            {editingFamilyContactId
+                                ? "Edit Family Contact"
+                                : "Add Family Contact"}
+                        </h3>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                            Contact information is stored against {resident.name}. The logged-in user is recorded automatically.
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSaveFamilyContact} className="space-y-6 p-4 sm:p-6">
+                        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                            <FamilyTextInput
+                                label="Full Name"
+                                name="full_name"
+                                value={familyForm.full_name}
+                                onChange={handleFamilyFormChange}
+                                placeholder="Example: Michael Ahmad"
+                                required
+                            />
+
+                            <FamilyTextInput
+                                label="Relationship"
+                                name="relationship"
+                                value={familyForm.relationship}
+                                onChange={handleFamilyFormChange}
+                                placeholder="Example: Son"
+                                required
+                            />
+
+                            <FamilyTextInput
+                                label="Phone Number"
+                                name="phone"
+                                value={familyForm.phone}
+                                onChange={handleFamilyFormChange}
+                                placeholder="Example: 012-3456789"
+                                required
+                            />
+
+                            <FamilyTextInput
+                                label="WhatsApp Number"
+                                name="whatsapp_number"
+                                value={familyForm.whatsapp_number}
+                                onChange={handleFamilyFormChange}
+                                placeholder="Leave blank if same as phone"
+                            />
                         </div>
-                        <div className="mt-5 divide-y divide-slate-100">
-                            <InfoRow label="Phone" value={contact.phone} />
-                            <InfoRow label="Medication notifications" value={contact.whatsappEnabled ? "Enabled" : "Disabled"} />
+
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            <FamilyToggle
+                                label="Primary Contact"
+                                description="Main family contact for this resident."
+                                name="is_primary"
+                                checked={familyForm.is_primary}
+                                onChange={handleFamilyFormChange}
+                            />
+
+                            <FamilyToggle
+                                label="Emergency Contact"
+                                description="Contact this person during an emergency."
+                                name="is_emergency_contact"
+                                checked={familyForm.is_emergency_contact}
+                                onChange={handleFamilyFormChange}
+                            />
+
+                            <FamilyToggle
+                                label="WhatsApp Enabled"
+                                description="Allow WhatsApp communication to this contact."
+                                name="whatsapp_enabled"
+                                checked={familyForm.whatsapp_enabled}
+                                onChange={handleFamilyFormChange}
+                            />
+
+                            <FamilyToggle
+                                label="Medication Updates"
+                                description="Receive medication and meal completion notifications."
+                                name="medication_notifications_enabled"
+                                checked={familyForm.medication_notifications_enabled}
+                                onChange={handleFamilyFormChange}
+                            />
+
+                            <FamilyToggle
+                                label="Care Updates"
+                                description="Receive future care-related notifications."
+                                name="care_notifications_enabled"
+                                checked={familyForm.care_notifications_enabled}
+                                onChange={handleFamilyFormChange}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                Notes
+                            </label>
+
+                            <textarea
+                                rows="4"
+                                name="notes"
+                                value={familyForm.notes}
+                                onChange={handleFamilyFormChange}
+                                placeholder="Optional notes about contact preference, availability or communication instructions..."
+                                className="w-full resize-y rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                            />
+                        </div>
+
+                        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setShowFamilyForm(false);
+                                    resetFamilyForm();
+                                    setFamilyError("");
+                                }}
+                                className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="submit"
+                                disabled={savingFamilyContact}
+                                className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {savingFamilyContact
+                                    ? "Saving..."
+                                    : editingFamilyContactId
+                                        ? "Update Contact"
+                                        : "Save Contact"}
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            )}
+
+            <section className="w-full min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-800">
+                            Resident Contacts
+                        </h3>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                            Family and emergency contacts linked to this resident.
+                        </p>
+                    </div>
+
+                    <span className="w-fit rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                        {residentFamilyContacts.length} contact{residentFamilyContacts.length === 1 ? "" : "s"}
+                    </span>
+                </div>
+
+                {familyLoading ? (
+                    <div className="p-8 text-center text-sm text-slate-500">
+                        Loading family contacts...
+                    </div>
+                ) : residentFamilyContacts.length > 0 ? (
+                    <div className="grid gap-4 p-4 md:grid-cols-2 sm:p-6">
+                        {residentFamilyContacts.map((contact) => (
+                            <article
+                                key={contact.id}
+                                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h4 className="break-words text-lg font-bold text-slate-800">
+                                                {contact.full_name}
+                                            </h4>
+
+                                            {contact.is_primary && (
+                                                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                                                    Primary
+                                                </span>
+                                            )}
+
+                                            {contact.is_emergency_contact && (
+                                                <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                                                    Emergency
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <p className="mt-1 text-sm text-slate-500">
+                                            {contact.relationship}
+                                        </p>
+                                    </div>
+
+                                    <span
+                                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                                            contact.whatsapp_enabled
+                                                ? "bg-emerald-50 text-emerald-700"
+                                                : "bg-slate-100 text-slate-500"
+                                        }`}
+                                    >
+                                        {contact.whatsapp_enabled
+                                            ? "WhatsApp On"
+                                            : "WhatsApp Off"}
+                                    </span>
+                                </div>
+
+                                <div className="mt-5 divide-y divide-slate-100">
+                                    <InfoRow label="Phone" value={contact.phone || "-"} />
+                                    <InfoRow label="WhatsApp" value={contact.whatsapp_number || contact.phone || "-"} />
+                                    <InfoRow
+                                        label="Medication updates"
+                                        value={contact.medication_notifications_enabled ? "Enabled" : "Disabled"}
+                                    />
+                                    <InfoRow
+                                        label="Care updates"
+                                        value={contact.care_notifications_enabled ? "Enabled" : "Disabled"}
+                                    />
+                                </div>
+
+                                {contact.notes && (
+                                    <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                            Notes
+                                        </p>
+
+                                        <p className="mt-2 break-words text-sm leading-6 text-slate-600">
+                                            {contact.notes}
+                                        </p>
+                                    </div>
+                                )}
+
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => openEditFamilyContact(contact)}
+                                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                                    >
+                                        Edit
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDeleteFamilyContact(contact)}
+                                        className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex min-h-[240px] items-center justify-center p-6 text-center">
+                        <div className="max-w-md">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-2xl">
+                                👪
+                            </div>
+
+                            <h4 className="mt-4 font-bold text-slate-800">
+                                No family contacts yet
+                            </h4>
+
+                            <p className="mt-2 text-sm leading-6 text-slate-500">
+                                Nurses or management can add the resident's family and emergency contact information here.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={openNewFamilyContact}
+                                className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                            >
+                                + Add First Contact
+                            </button>
                         </div>
                     </div>
-                ))}
-            </div>
+                )}
+            </section>
 
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-6">
-                <h3 className="font-bold text-slate-800">WhatsApp Message Example</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{resident.name} has taken the AM medication and breakfast.</p>
-                <p className="mt-3 text-xs text-slate-500">Real WhatsApp delivery will be triggered by the backend after a nurse completes the medication and meal round. Phone numbers are maintained here, not entered during each medication round.</p>
-            </div>
+            <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+                        💬
+                    </div>
+
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-slate-800">
+                            Medication WhatsApp Notification
+                        </h3>
+
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                            Contacts marked with WhatsApp and Medication Updates enabled are prepared for the future automated notification workflow.
+                        </p>
+
+                        <div className="mt-4 rounded-xl bg-white p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Message Example
+                            </p>
+
+                            <p className="mt-2 break-words text-sm font-semibold leading-6 text-slate-700">
+                                {resident.name} has taken the AM medication and breakfast.
+                            </p>
+                        </div>
+
+                        <p className="mt-3 text-xs leading-5 text-slate-500">
+                            WhatsApp delivery itself is not enabled yet. This screen now stores the real recipient and notification preferences that the backend will use later.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
         </div>
     )
 }
@@ -4119,12 +5697,122 @@ function AIActionRow({ priority, text }) {
     );
 }
 
-function SimpleInput({ label, value, onChange }) {
+function CareSummaryCard({ label, value, detail, tone = "blue" }) {
+    const toneStyles = {
+        blue: "bg-blue-50 text-blue-700",
+        green: "bg-emerald-50 text-emerald-700",
+        amber: "bg-amber-50 text-amber-700",
+        red: "bg-rose-50 text-rose-700",
+    };
+
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {label}
+            </p>
+
+            <div className="mt-3 flex items-end justify-between gap-3">
+                <p className="text-2xl font-bold text-slate-800 sm:text-3xl">
+                    {value}
+                </p>
+
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${toneStyles[tone] || toneStyles.blue}`}>
+                    {detail}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+
+function DocumentSummaryCard({
+    label,
+    value,
+    detail,
+    tone = "blue",
+}) {
+    const toneStyles = {
+        blue: "bg-blue-50 text-blue-700",
+        green: "bg-emerald-50 text-emerald-700",
+        amber: "bg-amber-50 text-amber-700",
+        slate: "bg-slate-100 text-slate-600",
+    };
+
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+            <div className="mt-3 flex items-end justify-between gap-3">
+                <p className="text-2xl font-bold text-slate-800 sm:text-3xl">{value}</p>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${toneStyles[tone] || toneStyles.blue}`}>
+                    {detail}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+
+function FamilyTextInput({
+    label,
+    name,
+    value,
+    onChange,
+    placeholder = "",
+    required = false,
+}) {
     return (
         <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">{label}</label>
-            <input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-blue-500" />
+            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                {label}
+                {required ? " *" : ""}
+            </label>
+
+            <input
+                type="text"
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
         </div>
+    );
+}
+
+
+function FamilyToggle({
+    label,
+    description,
+    name,
+    checked,
+    onChange,
+}) {
+    return (
+        <label
+            className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+                checked
+                    ? "border-blue-200 bg-blue-50"
+                    : "border-slate-200 bg-slate-50"
+            }`}
+        >
+            <input
+                type="checkbox"
+                name={name}
+                checked={checked}
+                onChange={onChange}
+                className="mt-1 h-4 w-4 shrink-0"
+            />
+
+            <div className="min-w-0">
+                <p className="font-semibold text-slate-800">
+                    {label}
+                </p>
+
+                <p className="mt-1 text-sm leading-5 text-slate-500">
+                    {description}
+                </p>
+            </div>
+        </label>
     );
 }
 

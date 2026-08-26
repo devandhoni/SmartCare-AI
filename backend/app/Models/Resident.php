@@ -10,6 +10,20 @@ class Resident extends Model
 
     protected $table = 'residents';
 
+    public function contacts()
+{
+    return $this->hasMany(
+        ResidentContact::class
+    );
+}
+
+
+public function documents()
+{
+    return $this->hasMany(
+        ResidentDocument::class
+    );
+}
 
     /*
     |--------------------------------------------------------------------------

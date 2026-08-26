@@ -47,6 +47,8 @@ use App\Http\Controllers\VitalTrendController;
 use App\Http\Controllers\AICareWorkflowController;
 use App\Http\Controllers\AIExecutiveReportingController;
 use App\Http\Controllers\CareRecordController;
+use App\Http\Controllers\ResidentContactController;
+use App\Http\Controllers\ResidentDocumentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -240,6 +242,71 @@ Route::delete(
     ]
 );
 
+
+Route::get(
+    '/residents/{id}/contacts',
+    [ResidentContactController::class, 'index']
+);
+
+Route::post(
+    '/residents/{id}/contacts',
+    [ResidentContactController::class, 'store']
+);
+
+Route::get(
+    '/resident-contacts/{id}',
+    [ResidentContactController::class, 'show']
+);
+
+Route::put(
+    '/resident-contacts/{id}',
+    [ResidentContactController::class, 'update']
+);
+
+Route::delete(
+    '/resident-contacts/{id}',
+    [ResidentContactController::class, 'destroy']
+);
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Residents Documents Controller 
+|--------------------------------------------------------------------------
+*/
+
+
+
+Route::get(
+    '/residents/{id}/documents',
+    [ResidentDocumentController::class, 'index']
+);
+
+Route::post(
+    '/residents/{id}/documents',
+    [ResidentDocumentController::class, 'store']
+);
+
+Route::get(
+    '/resident-documents/{id}',
+    [ResidentDocumentController::class, 'show']
+);
+
+Route::get(
+    '/resident-documents/{id}/download',
+    [ResidentDocumentController::class, 'download']
+);
+
+Route::put(
+    '/resident-documents/{id}',
+    [ResidentDocumentController::class, 'update']
+);
+
+Route::delete(
+    '/resident-documents/{id}',
+    [ResidentDocumentController::class, 'destroy']
+);
 
 
 /*
