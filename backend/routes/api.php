@@ -51,6 +51,7 @@ use App\Http\Controllers\ResidentContactController;
 use App\Http\Controllers\ResidentDocumentController;
 use App\Http\Controllers\ResidentAdmissionController;
 use App\Http\Controllers\ResidentAdmissionConsentController;
+use App\Http\Controllers\MedicineInventoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -476,6 +477,54 @@ Route::post(
             ]
         );
 
+
+
+/*
+|--------------------------------------------------------------------------
+| Medicine Inventory Controller 
+|--------------------------------------------------------------------------
+*/
+
+
+        Route::get(
+            '/medicine-inventory',
+            [
+                MedicineInventoryController::class,
+                'index'
+            ]
+        );
+
+        Route::post(
+            '/medicine-inventory',
+            [
+                MedicineInventoryController::class,
+                'store'
+            ]
+        );
+
+        Route::put(
+            '/medicine-inventory/{id}',
+            [
+                MedicineInventoryController::class,
+                'update'
+            ]
+        );
+
+        Route::post(
+            '/medicine-inventory/{id}/stock-adjustment',
+            [
+                MedicineInventoryController::class,
+                'stockAdjustment'
+            ]
+        );
+
+        Route::get(
+            '/medicine-inventory/{id}/transactions',
+            [
+                MedicineInventoryController::class,
+                'transactions'
+            ]
+        );
 
 /*
 |--------------------------------------------------------------------------

@@ -73,8 +73,9 @@ const initialForm = {
     medications: [
         {
             medication_id: "",
+            medicine_search: "",
             dosage_instruction: "",
-            dosage_quantity: "",
+            dosage_quantity: "1",
             frequency: "",
             time_slot: "",
             scheduled_time: "",
@@ -319,6 +320,16 @@ function Admissions() {
             }
         }
 
+        if (currentStep === 4) {
+            for (const medication of form.medications.filter(hasMedicationData)) {
+                if (!medication.medication_id) return "Please select a medicine for each medication row.";
+                if (!medication.dosage_instruction.trim()) return "Dosage instruction is required for each selected medicine.";
+                if (!medication.frequency.trim()) return "Frequency is required for each selected medicine.";
+                if (!medication.time_slot) return "Please choose AM, PM, NIGHT or OTHER for each selected medicine.";
+                if (!Number.isInteger(Number(medication.dosage_quantity)) || Number(medication.dosage_quantity) < 1) return "Dosage quantity must be a whole number of at least 1.";
+            }
+        }
+
         if (currentStep === 5 && !form.admitted_at) {
             return "Admission date and time is required.";
         }
@@ -479,9 +490,9 @@ function Admissions() {
                 await api.post(`/residents/${residentId}/medications`, {
                     medication_id: Number(medication.medication_id),
                     dosage_instruction: emptyToNull(medication.dosage_instruction),
-                    dosage_quantity: medication.dosage_quantity === "" ? null : Number(medication.dosage_quantity),
-                    frequency: emptyToNull(medication.frequency),
-                    time_slot: emptyToNull(medication.time_slot),
+                    dosage_quantity: Number(medication.dosage_quantity),
+                    frequency: medication.frequency.trim(),
+                    time_slot: medication.time_slot,
                     scheduled_time: emptyToNull(medication.scheduled_time),
                     start_date: emptyToNull(medication.start_date),
                     end_date: emptyToNull(medication.end_date),
@@ -881,26 +892,28 @@ function Admissions() {
                                             <button type="button" onClick={() => removeMedication(index)} className="text-sm font-semibold text-red-600 hover:text-red-700">Remove</button>
                                         </div>
                                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                            <SelectField
-                                                label="Medicine"
-                                                value={item.medication_id}
-                                                onChange={(e) => updateMedication(index, "medication_id", e.target.value)}
-                                                options={[
-                                                    ["", medicationOptions.length ? "Select medicine" : "No medicines available"],
-                                                    ...medicationOptions.map((medicine) => [
-                                                        String(medicine.id),
-                                                        `${medicine.medicine_name}${medicine.dosage ? ` · ${medicine.dosage}` : ""}`,
-                                                    ]),
-                                                ]}
+                                            <SearchableMedicineSelect
+                                                medications={medicationOptions}
+                                                selectedId={item.medication_id}
+                                                searchValue={item.medicine_search || ""}
+                                                onSearchChange={(value) => updateMedication(index, "medicine_search", value)}
+                                                onSelect={(medicine) => {
+                                                    updateMedication(index, "medication_id", String(medicine.id));
+                                                    updateMedication(index, "medicine_search", medicineDisplayName(medicine));
+                                                }}
+                                                onClear={() => {
+                                                    updateMedication(index, "medication_id", "");
+                                                    updateMedication(index, "medicine_search", "");
+                                                }}
                                             />
                                             <Field label="Dosage Instruction" value={item.dosage_instruction} onChange={(e) => updateMedication(index, "dosage_instruction", e.target.value)} placeholder="e.g. After food" />
-                                            <Field label="Dosage Quantity" type="number" step="0.01" value={item.dosage_quantity} onChange={(e) => updateMedication(index, "dosage_quantity", e.target.value)} placeholder="1" />
+                                            <Field label="Dosage Quantity" type="number" min="1" step="1" value={item.dosage_quantity} onChange={(e) => updateMedication(index, "dosage_quantity", e.target.value)} placeholder="1" />
                                             <Field label="Frequency" value={item.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} placeholder="e.g. Daily" />
                                             <SelectField
                                                 label="Round / Time Slot"
                                                 value={item.time_slot}
                                                 onChange={(e) => updateMedication(index, "time_slot", e.target.value)}
-                                                options={[["", "Select round"], ["AM", "AM"], ["PM", "PM"], ["Night", "Night"]]}
+                                                options={[["", "Select round"], ["AM", "AM"], ["PM", "PM"], ["NIGHT", "Night"], ["OTHER", "Other"]]}
                                             />
                                             <Field label="Scheduled Time" type="time" value={item.scheduled_time} onChange={(e) => updateMedication(index, "scheduled_time", e.target.value)} />
                                             <Field label="Start Date" type="date" value={item.start_date} onChange={(e) => updateMedication(index, "start_date", e.target.value)} />
@@ -1324,6 +1337,52 @@ function ConsentToggle({
     );
 }
 
+function SearchableMedicineSelect({ medications, selectedId, searchValue, onSearchChange, onSelect, onClear }) {
+    const [open, setOpen] = useState(false);
+    const selected = medications.find((medicine) => String(medicine.id) === String(selectedId));
+    const term = String(searchValue || "").trim().toLowerCase();
+    const matches = medications.filter((medicine) => {
+        if (!term) return true;
+        return [medicine.medicine_name, medicine.category, medicine.dosage, medicine.unit, medicine.supplier]
+            .filter(Boolean).join(" ").toLowerCase().includes(term);
+    }).slice(0, 12);
+
+    return (
+        <div className="relative">
+            <span className="mb-2 block text-sm font-semibold text-slate-700">Medicine</span>
+            <div className="flex gap-2">
+                <input
+                    value={selected ? medicineDisplayName(selected) : searchValue}
+                    onFocus={() => setOpen(true)}
+                    onChange={(event) => {
+                        if (selectedId) onClear();
+                        onSearchChange(event.target.value);
+                        setOpen(true);
+                    }}
+                    placeholder={medications.length ? "Type medicine name, strength, category..." : "No medicines available"}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+                {selectedId && (
+                    <button type="button" onClick={() => { onClear(); setOpen(true); }} className="rounded-xl border border-slate-300 px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">Clear</button>
+                )}
+            </div>
+            {open && !selectedId && (
+                <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                    {matches.length === 0 ? (
+                        <div className="px-4 py-4 text-sm text-slate-500">No medicine found. Add it first in Inventory → Medicine Master.</div>
+                    ) : matches.map((medicine) => (
+                        <button key={medicine.id} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(medicine); setOpen(false); }} className="block w-full border-b border-slate-100 px-4 py-3 text-left last:border-b-0 hover:bg-blue-50">
+                            <div className="font-semibold text-slate-800">{medicine.medicine_name}</div>
+                            <div className="mt-1 text-xs text-slate-500">{[medicine.dosage, medicine.unit, medicine.category, medicine.supplier].filter(Boolean).join(" · ") || "No additional details"}</div>
+                        </button>
+                    ))}
+                </div>
+            )}
+            {selected && <div className="mt-2 text-xs text-emerald-700">Selected from Medicine Master</div>}
+        </div>
+    );
+}
+
 function SectionTitle({ title, action = null }) {
     return (
         <div className="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1424,6 +1483,10 @@ function StatusBadge({ status }) {
             {prettyLabel(normalized || "UNKNOWN")}
         </span>
     );
+}
+
+function medicineDisplayName(medicine) {
+    return [medicine?.medicine_name, medicine?.dosage, medicine?.unit].filter(Boolean).join(" · ");
 }
 
 function hasHospitalizationData(item) {

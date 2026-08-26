@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Medication;
-
+use Illuminate\Http\Request;
 
 class MedicationController extends Controller
 {
-
-
     /*
     |--------------------------------------------------------------------------
     | View All Medications
@@ -18,16 +15,12 @@ class MedicationController extends Controller
 
     public function index()
     {
-
         return response()->json(
-
-            Medication::all()
-
+            Medication::orderBy('medicine_name')
+                ->orderBy('dosage')
+                ->get()
         );
-
     }
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -37,36 +30,57 @@ class MedicationController extends Controller
 
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'medicine_name' =>
+                'required|string|max:255',
 
-        $request->validate([
+            'category' =>
+                'nullable|string|max:100',
 
-            'medicine_name'=>'required'
+            'dosage' =>
+                'nullable|string|max:100',
 
+            'unit' =>
+                'nullable|string|max:100',
+
+            'supplier' =>
+                'nullable|string|max:255',
         ]);
 
+        $duplicate = Medication::where(
+                'medicine_name',
+                $validated['medicine_name']
+            )
+            ->where(
+                'dosage',
+                $validated['dosage'] ?? null
+            )
+            ->where(
+                'unit',
+                $validated['unit'] ?? null
+            )
+            ->exists();
 
-        $medication = Medication::create([
+        if ($duplicate) {
+            return response()->json([
+                'message' =>
+                    'A medicine with the same name, dosage and unit already exists.',
+            ], 422);
+        }
 
-            'medicine_name'=>$request->medicine_name,
-            'category'=>$request->category,
-            'dosage'=>$request->dosage,
-            'unit'=>$request->unit,
-            'supplier'=>$request->supplier
-
-        ]);
-
+        $medication =
+            Medication::create(
+                $validated
+            );
 
         return response()->json([
+            'message' =>
+                'Medication created successfully',
 
-            'message'=>'Medication created successfully',
-            'medication'=>$medication
-
-        ]);
-
+            'medication' =>
+                $medication,
+        ], 201);
     }
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -76,17 +90,10 @@ class MedicationController extends Controller
 
     public function show($id)
     {
-
         return response()->json(
-
             Medication::findOrFail($id)
-
         );
-
     }
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -94,28 +101,90 @@ class MedicationController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function update(Request $request,$id)
-    {
+    public function update(
+        Request $request,
+        $id
+    ) {
+        $medication =
+            Medication::findOrFail(
+                $id
+            );
 
-        $medication = Medication::findOrFail($id);
+        $validated = $request->validate([
+            'medicine_name' =>
+                'sometimes|required|string|max:255',
 
+            'category' =>
+                'nullable|string|max:100',
 
-        $medication->update(
-            $request->all()
-        );
+            'dosage' =>
+                'nullable|string|max:100',
 
+            'unit' =>
+                'nullable|string|max:100',
 
-        return response()->json([
-
-            'message'=>'Medication updated successfully',
-            'medication'=>$medication
-
+            'supplier' =>
+                'nullable|string|max:255',
         ]);
 
+        $medicineName =
+            $validated['medicine_name']
+            ?? $medication->medicine_name;
+
+        $dosage =
+            array_key_exists(
+                'dosage',
+                $validated
+            )
+                ? $validated['dosage']
+                : $medication->dosage;
+
+        $unit =
+            array_key_exists(
+                'unit',
+                $validated
+            )
+                ? $validated['unit']
+                : $medication->unit;
+
+        $duplicate = Medication::where(
+                'medicine_name',
+                $medicineName
+            )
+            ->where(
+                'dosage',
+                $dosage
+            )
+            ->where(
+                'unit',
+                $unit
+            )
+            ->where(
+                'id',
+                '!=',
+                $medication->id
+            )
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json([
+                'message' =>
+                    'Another medicine with the same name, dosage and unit already exists.',
+            ], 422);
+        }
+
+        $medication->update(
+            $validated
+        );
+
+        return response()->json([
+            'message' =>
+                'Medication updated successfully',
+
+            'medication' =>
+                $medication,
+        ]);
     }
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -125,20 +194,27 @@ class MedicationController extends Controller
 
     public function destroy($id)
     {
+        $medication =
+            Medication::findOrFail(
+                $id
+            );
 
-        $medication = Medication::findOrFail($id);
-
+        if (
+            $medication
+                ->residentMedications()
+                ->exists()
+        ) {
+            return response()->json([
+                'message' =>
+                    'This medication cannot be deleted because it is already assigned to one or more residents.',
+            ], 422);
+        }
 
         $medication->delete();
 
-
         return response()->json([
-
-            'message'=>'Medication deleted successfully'
-
+            'message' =>
+                'Medication deleted successfully',
         ]);
-
     }
-
-
 }
