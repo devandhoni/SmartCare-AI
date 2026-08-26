@@ -157,7 +157,11 @@ class ResidentController extends Controller
             'admission_date'=>'nullable|date',
 
 
-            'status'=>'nullable'
+            'status'=>'nullable',
+
+            'phone' => 'nullable|string|max:50',
+
+            'email' => 'nullable|email|max:255',
 
 
         ]);
@@ -380,7 +384,11 @@ class ResidentController extends Controller
 
 
 
-            'status'=>'nullable'
+            'status'=>'nullable',
+
+            'phone' => 'nullable|string|max:50',
+
+            'email' => 'nullable|email|max:255',
 
 
         ]);

@@ -49,6 +49,8 @@ use App\Http\Controllers\AIExecutiveReportingController;
 use App\Http\Controllers\CareRecordController;
 use App\Http\Controllers\ResidentContactController;
 use App\Http\Controllers\ResidentDocumentController;
+use App\Http\Controllers\ResidentAdmissionController;
+use App\Http\Controllers\ResidentAdmissionConsentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -306,6 +308,55 @@ Route::put(
 Route::delete(
     '/resident-documents/{id}',
     [ResidentDocumentController::class, 'destroy']
+);
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Residents Admission Document Controller 
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/admissions',
+    [ResidentAdmissionController::class, 'index']
+);
+
+Route::post(
+    '/admissions',
+    [ResidentAdmissionController::class, 'store']
+);
+
+Route::get(
+    '/admissions/{id}',
+    [ResidentAdmissionController::class, 'show']
+);
+
+Route::put(
+    '/admissions/{id}',
+    [ResidentAdmissionController::class, 'update']
+);
+
+Route::post(
+    '/admissions/{id}/complete',
+    [ResidentAdmissionController::class, 'complete']
+);
+
+Route::get(
+    '/residents/{id}/admissions',
+    [ResidentAdmissionController::class, 'residentAdmissions']
+);
+
+Route::get(
+    '/admissions/{id}/consent',
+    [ResidentAdmissionConsentController::class, 'show']
+);
+
+Route::post(
+    '/admissions/{id}/consent',
+    [ResidentAdmissionConsentController::class, 'store']
 );
 
 

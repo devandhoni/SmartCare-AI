@@ -10,6 +10,7 @@ class Resident extends Model
 
     protected $table = 'residents';
 
+
     public function contacts()
 {
     return $this->hasMany(
@@ -22,6 +23,29 @@ public function documents()
 {
     return $this->hasMany(
         ResidentDocument::class
+    );
+}
+
+
+public function admissions()
+{
+    return $this->hasMany(
+        ResidentAdmission::class
+    );
+}
+
+
+public function admissionMedicalHistories()
+{
+    return $this->hasMany(
+        ResidentAdmissionMedicalHistory::class
+    );
+}
+
+public function admissionHospitalizations()
+{
+    return $this->hasMany(
+        ResidentAdmissionHospitalization::class
     );
 }
 
@@ -54,6 +78,8 @@ public function documents()
         'nationality',
         'address',
         'profile_photo',
+        'phone',
+        'email',
 
 
         // Emergency Contact
