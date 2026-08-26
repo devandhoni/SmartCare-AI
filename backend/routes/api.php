@@ -52,6 +52,7 @@ use App\Http\Controllers\ResidentDocumentController;
 use App\Http\Controllers\ResidentAdmissionController;
 use App\Http\Controllers\ResidentAdmissionConsentController;
 use App\Http\Controllers\MedicineInventoryController;
+use App\Http\Controllers\ResidentAdmissionDraftController;
 
 /*
 |--------------------------------------------------------------------------
@@ -360,6 +361,53 @@ Route::post(
     [ResidentAdmissionConsentController::class, 'store']
 );
 
+
+
+/*
+|--------------------------------------------------------------------------
+| Residents Admission Draft Controller 
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/admission-drafts',
+    [
+        ResidentAdmissionDraftController::class,
+        'index'
+    ]
+);
+
+Route::post(
+    '/admission-drafts',
+    [
+        ResidentAdmissionDraftController::class,
+        'store'
+    ]
+);
+
+Route::get(
+    '/admission-drafts/{id}',
+    [
+        ResidentAdmissionDraftController::class,
+        'show'
+    ]
+);
+
+Route::put(
+    '/admission-drafts/{id}',
+    [
+        ResidentAdmissionDraftController::class,
+        'update'
+    ]
+);
+
+Route::delete(
+    '/admission-drafts/{id}',
+    [
+        ResidentAdmissionDraftController::class,
+        'destroy'
+    ]
+);
 
 /*
 |--------------------------------------------------------------------------

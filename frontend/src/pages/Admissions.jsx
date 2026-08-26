@@ -135,6 +135,12 @@ function Admissions() {
     const [loadingAdmissions, setLoadingAdmissions] = useState(true);
     const [rooms, setRooms] = useState([]);
     const [medicationOptions, setMedicationOptions] = useState([]);
+    const [drafts, setDrafts] = useState([]);
+    const [loadingDrafts, setLoadingDrafts] = useState(true);
+    const [draftId, setDraftId] = useState(null);
+    const [draftReference, setDraftReference] = useState("");
+    const [savingDraft, setSavingDraft] = useState(false);
+    const [discardingDraftId, setDiscardingDraftId] = useState(null);
 
     useEffect(() => {
         const now = new Date();
@@ -148,6 +154,7 @@ function Admissions() {
         }));
 
         loadAdmissions();
+        loadDrafts();
         loadRooms();
         loadMedicationOptions();
     }, []);
@@ -165,6 +172,19 @@ function Admissions() {
             console.error("Unable to load admissions:", err);
         } finally {
             setLoadingAdmissions(false);
+        }
+    };
+
+    const loadDrafts = async () => {
+        try {
+            setLoadingDrafts(true);
+            const response = await api.get("/admission-drafts");
+            setDrafts(Array.isArray(response.data?.drafts) ? response.data.drafts : []);
+        } catch (err) {
+            console.error("Unable to load admission drafts:", err);
+            setDrafts([]);
+        } finally {
+            setLoadingDrafts(false);
         }
     };
 
@@ -237,6 +257,7 @@ function Admissions() {
                 ...current.medications,
                 {
                     medication_id: "",
+                    medicine_search: "",
                     dosage_instruction: "",
                     dosage_quantity: "",
                     frequency: "",
@@ -537,17 +558,16 @@ function Admissions() {
                 `${form.full_name.trim()} has been admitted successfully.`
             );
 
-            const now = new Date();
-            const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
-                .toISOString()
-                .slice(0, 16);
+            if (draftId) {
+                try {
+                    await api.delete(`/admission-drafts/${draftId}`);
+                } catch (draftCleanupError) {
+                    console.error("Admission completed, but draft cleanup failed:", draftCleanupError);
+                }
+            }
 
-            setForm({
-                ...initialForm,
-                admitted_at: local,
-            });
-            setStep(1);
-            await loadAdmissions();
+            resetAdmissionForm();
+            await Promise.all([loadAdmissions(), loadDrafts()]);
 
             window.scrollTo({ top: 0, behavior: "smooth" });
         } catch (err) {
@@ -575,6 +595,97 @@ function Admissions() {
         } finally {
             setSaving(false);
         }
+    };
+
+    const saveDraft = async () => {
+        setSavingDraft(true);
+        setError("");
+        setSuccess("");
+
+        try {
+            const payload = {
+                full_name: form.full_name.trim() || null,
+                current_step: step,
+                form_data: form,
+            };
+
+            const response = draftId
+                ? await api.put(`/admission-drafts/${draftId}`, payload)
+                : await api.post("/admission-drafts", payload);
+
+            const savedDraft = response.data?.draft;
+
+            if (!savedDraft?.id) {
+                throw new Error("Draft was saved but no draft ID was returned.");
+            }
+
+            setDraftId(savedDraft.id);
+            setDraftReference(savedDraft.draft_reference || "");
+            setSuccess(`Admission draft saved${savedDraft.draft_reference ? ` as ${savedDraft.draft_reference}` : ""}.`);
+            await loadDrafts();
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (err) {
+            console.error("Unable to save admission draft:", err);
+            const validationErrors = err.response?.data?.errors;
+            const firstValidationError = validationErrors
+                ? Object.values(validationErrors).flat().find(Boolean)
+                : null;
+            setError(firstValidationError || err.response?.data?.message || err.message || "Unable to save admission draft.");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } finally {
+            setSavingDraft(false);
+        }
+    };
+
+    const resumeDraft = (draft) => {
+        const savedForm = draft?.form_data && typeof draft.form_data === "object"
+            ? draft.form_data
+            : {};
+
+        setForm(normalizeDraftForm(savedForm));
+        setStep(Math.min(Math.max(Number(draft?.current_step) || 1, 1), STEPS.length));
+        setDraftId(draft.id);
+        setDraftReference(draft.draft_reference || "");
+        setError("");
+        setSuccess(`Resumed ${draft.draft_reference || "admission draft"}.`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const discardDraft = async (draft) => {
+        const label = draft?.full_name || draft?.draft_reference || "this admission draft";
+        if (!window.confirm(`Discard ${label}? This cannot be undone.`)) return;
+
+        setDiscardingDraftId(draft.id);
+        setError("");
+        setSuccess("");
+
+        try {
+            await api.delete(`/admission-drafts/${draft.id}`);
+
+            if (String(draftId) === String(draft.id)) {
+                resetAdmissionForm();
+            }
+
+            setSuccess("Admission draft discarded.");
+            await loadDrafts();
+        } catch (err) {
+            console.error("Unable to discard admission draft:", err);
+            setError(err.response?.data?.message || err.message || "Unable to discard admission draft.");
+        } finally {
+            setDiscardingDraftId(null);
+        }
+    };
+
+    const resetAdmissionForm = () => {
+        const now = new Date();
+        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16);
+
+        setForm({ ...initialForm, admitted_at: local });
+        setStep(1);
+        setDraftId(null);
+        setDraftReference("");
     };
 
     const progress = useMemo(
@@ -608,6 +719,11 @@ function Admissions() {
                             <p className="mt-1 font-bold text-slate-800">
                                 {step} of {STEPS.length} · {STEPS[step - 1].title}
                             </p>
+                            {draftId && (
+                                <p className="mt-1 text-xs font-semibold text-blue-700">
+                                    Draft: {draftReference || `#${draftId}`}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -1096,39 +1212,89 @@ function Admissions() {
                         </StepCard>
                     )}
 
-                    <div className="mt-8 flex flex-col-reverse gap-3 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-8 flex flex-col gap-3 border-t border-slate-100 pt-6 lg:flex-row lg:items-center lg:justify-between">
                         <button
                             type="button"
                             onClick={goBack}
-                            disabled={step === 1 || saving}
+                            disabled={step === 1 || saving || savingDraft}
                             className="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                             ← Back
                         </button>
 
-                        {step < STEPS.length ? (
+                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
                             <button
                                 type="button"
-                                onClick={goNext}
-                                disabled={saving}
-                                className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                                onClick={saveDraft}
+                                disabled={saving || savingDraft}
+                                className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Continue →
+                                {savingDraft ? "Saving Draft..." : draftId ? "Save Draft Changes" : "Save Draft"}
                             </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={completeAdmission}
-                                disabled={saving}
-                                className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                            >
-                                {saving
-                                    ? "Completing Admission..."
-                                    : "✓ Complete Admission"}
-                            </button>
-                        )}
+
+                            {step < STEPS.length ? (
+                                <button
+                                    type="button"
+                                    onClick={goNext}
+                                    disabled={saving || savingDraft}
+                                    className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                                >
+                                    Continue →
+                                </button>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={completeAdmission}
+                                    disabled={saving || savingDraft}
+                                    className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {saving ? "Completing Admission..." : "✓ Complete Admission"}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
+            </section>
+
+            <section className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+                <div className="border-b border-amber-100 bg-amber-50/60 p-5 sm:p-6">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 className="text-lg font-bold text-slate-800">In Progress Admissions</h2>
+                            <p className="mt-1 text-sm text-slate-500">Saved admission drafts can be resumed without creating a resident until admission is completed.</p>
+                        </div>
+                        <span className="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">{drafts.length} Draft{drafts.length === 1 ? "" : "s"}</span>
+                    </div>
+                </div>
+
+                {loadingDrafts ? (
+                    <div className="p-8 text-center text-sm text-slate-500">Loading admission drafts...</div>
+                ) : drafts.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <p className="font-semibold text-slate-700">No admissions are currently in progress.</p>
+                        <p className="mt-2 text-sm text-slate-500">Use Save Draft at any step when a nurse needs to continue later.</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-slate-100">
+                        {drafts.map((draft) => (
+                            <div key={draft.id} className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6 ${String(draftId) === String(draft.id) ? "bg-blue-50/50" : ""}`}>
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <h3 className="font-bold text-slate-800">{draft.full_name || "Unnamed Resident"}</h3>
+                                        <StatusBadge status="DRAFT" />
+                                        {String(draftId) === String(draft.id) && <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">Currently Open</span>}
+                                    </div>
+                                    <p className="mt-1 text-sm text-slate-500">{draft.draft_reference} · Step {draft.current_step || 1} of {STEPS.length} · Updated {displayDateTime(draft.updated_at)}</p>
+                                    {(draft.updater?.full_name || draft.creator?.full_name) && <p className="mt-1 text-xs text-slate-400">Last saved by {draft.updater?.full_name || draft.creator?.full_name}</p>}
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                    <button type="button" onClick={() => resumeDraft(draft)} disabled={saving || savingDraft || discardingDraftId === draft.id} className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50">Resume</button>
+                                    <button type="button" onClick={() => discardDraft(draft)} disabled={saving || savingDraft || discardingDraftId === draft.id} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50">{discardingDraftId === draft.id ? "Discarding..." : "Discard"}</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
 
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -1483,6 +1649,32 @@ function StatusBadge({ status }) {
             {prettyLabel(normalized || "UNKNOWN")}
         </span>
     );
+}
+
+function normalizeDraftForm(savedForm) {
+    const merged = { ...initialForm, ...savedForm };
+
+    merged.hospitalizations = Array.isArray(savedForm?.hospitalizations) && savedForm.hospitalizations.length
+        ? savedForm.hospitalizations
+        : initialForm.hospitalizations.map((item) => ({ ...item }));
+
+    merged.medications = Array.isArray(savedForm?.medications) && savedForm.medications.length
+        ? savedForm.medications.map((item) => ({
+            medication_id: "",
+            medicine_search: "",
+            dosage_instruction: "",
+            dosage_quantity: "1",
+            frequency: "",
+            time_slot: "",
+            scheduled_time: "",
+            start_date: "",
+            end_date: "",
+            prescribed_by: "",
+            ...item,
+        }))
+        : initialForm.medications.map((item) => ({ ...item }));
+
+    return merged;
 }
 
 function medicineDisplayName(medicine) {
