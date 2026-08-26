@@ -2,56 +2,28 @@
 
 namespace App\Http\Controllers;
 
-
-use Illuminate\Http\Request;
-
-
-use App\Models\Resident;
-
-
-use App\Services\ClinicalTimelineService;
-
-
 use App\Enums\ClinicalEventType;
-
-
-
+use App\Models\Resident;
+use App\Services\ClinicalTimelineService;
+use Illuminate\Http\Request;
 
 class ResidentController extends Controller
 {
-
-
     /*
     |--------------------------------------------------------------------------
     | View Active Residents
     |--------------------------------------------------------------------------
     */
 
-
     public function index()
     {
-
-
         return response()->json(
-
             Resident::where(
                 'status',
                 'Active'
-            )
-            ->get()
-
+            )->get()
         );
-
-
     }
-
-
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -59,31 +31,15 @@ class ResidentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-
     public function archive()
     {
-
-
         return response()->json(
-
             Resident::where(
                 'status',
                 'Discharged'
-            )
-            ->get()
-
+            )->get()
         );
-
-
     }
-
-
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -91,188 +47,98 @@ class ResidentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-
     public function store(
-
         Request $request,
-
         ClinicalTimelineService $timelineService
-
-    )
-    {
-
-
-
+    ) {
         $data = $request->validate([
+            'room_id' =>
+                'nullable|exists:rooms,id',
 
+            'full_name' =>
+                'required|string|max:255',
 
-            'full_name'=>'required',
+            'ic_number' =>
+                'nullable|string|max:100',
 
+            'date_of_birth' =>
+                'nullable|date',
 
-            'ic_number'=>'nullable',
+            'gender' =>
+                'nullable|string|max:50',
 
+            'nationality' =>
+                'nullable|string|max:100',
 
-            'date_of_birth'=>'nullable|date',
+            'address' =>
+                'nullable|string',
 
+            'phone' =>
+                'nullable|string|max:50',
 
-            'gender'=>'nullable',
+            'email' =>
+                'nullable|email|max:255',
 
+            'profile_photo' =>
+                'nullable',
 
-            'nationality'=>'nullable',
+            'emergency_contact' =>
+                'nullable|string|max:255',
 
+            'emergency_relationship' =>
+                'nullable|string|max:100',
 
-            'address'=>'nullable',
+            'emergency_phone' =>
+                'nullable|string|max:50',
 
+            'blood_type' =>
+                'nullable|string|max:20',
 
-            'profile_photo'=>'nullable',
+            'medical_condition' =>
+                'nullable|string',
 
+            'allergies' =>
+                'nullable|string',
 
+            'chronic_disease' =>
+                'nullable|string',
 
-            'emergency_contact'=>'nullable',
+            'medical_notes' =>
+                'nullable|string',
 
+            'admission_date' =>
+                'nullable|date',
 
-            'emergency_relationship'=>'nullable',
-
-
-            'emergency_phone'=>'nullable',
-
-
-
-            'blood_type'=>'nullable',
-
-
-            'medical_condition'=>'nullable',
-
-
-            'allergies'=>'nullable',
-
-
-            'chronic_disease'=>'nullable',
-
-
-            'medical_notes'=>'nullable',
-
-
-
-            'admission_date'=>'nullable|date',
-
-
-            'status'=>'nullable',
-
-            'phone' => 'nullable|string|max:50',
-
-            'email' => 'nullable|email|max:255',
-
-
+            'status' =>
+                'nullable|string|max:50',
         ]);
 
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Default Resident Status
-        |--------------------------------------------------------------------------
-        */
-
-
-        if(!isset($data['status']))
-        {
-
-            $data['status']="Active";
-
+        if (!isset($data['status'])) {
+            $data['status'] = 'Active';
         }
 
-
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Resident
-        |--------------------------------------------------------------------------
-        */
-
-
-        $resident = Resident::create($data);
-
-
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Admission Timeline
-        |--------------------------------------------------------------------------
-        */
-
+        $resident =
+            Resident::create(
+                $data
+            );
 
         $timelineService->record(
-
-
             $resident->id,
-
-
             ClinicalEventType::ADMISSION,
-
-
-            "Resident Admission",
-
-
-            "Resident admitted into SmartCare AI nursing facility.",
-
-
-            "Resident",
-
-
+            'Resident Admission',
+            'Resident admitted into SmartCare AI nursing facility.',
+            'Resident',
             $resident->id
-
-
-
         );
 
-
-
-
-
-
-
-
         return response()->json([
+            'message' =>
+                'Resident registered successfully',
 
-
-            'message'=>
-            'Resident registered successfully',
-
-
-
-            'resident'=>
-            $resident
-
-
-
-        ],201);
-
-
-
+            'resident' =>
+                $resident,
+        ], 201);
     }
-
-
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -280,32 +146,17 @@ class ResidentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-
     public function show($id)
     {
-
-
         $resident =
-        Resident::findOrFail($id);
-
-
+            Resident::findOrFail(
+                $id
+            );
 
         return response()->json(
-
             $resident
-
         );
-
-
     }
-
-
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -313,165 +164,93 @@ class ResidentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-
     public function update(
-
         Request $request,
-
         $id,
-
         ClinicalTimelineService $timelineService
-
-    )
-    {
-
-
-
+    ) {
         $resident =
-        Resident::findOrFail($id);
-
-
-
-
-
-
+            Resident::findOrFail(
+                $id
+            );
 
         $data = $request->validate([
+            'room_id' =>
+                'nullable|exists:rooms,id',
 
+            'full_name' =>
+                'nullable|string|max:255',
 
-            'full_name'=>'nullable',
+            'ic_number' =>
+                'nullable|string|max:100',
 
+            'date_of_birth' =>
+                'nullable|date',
 
-            'ic_number'=>'nullable',
+            'gender' =>
+                'nullable|string|max:50',
 
+            'nationality' =>
+                'nullable|string|max:100',
 
-            'date_of_birth'=>'nullable|date',
+            'address' =>
+                'nullable|string',
 
+            'phone' =>
+                'nullable|string|max:50',
 
-            'gender'=>'nullable',
+            'email' =>
+                'nullable|email|max:255',
 
+            'emergency_contact' =>
+                'nullable|string|max:255',
 
-            'nationality'=>'nullable',
+            'emergency_relationship' =>
+                'nullable|string|max:100',
 
+            'emergency_phone' =>
+                'nullable|string|max:50',
 
-            'address'=>'nullable',
+            'blood_type' =>
+                'nullable|string|max:20',
 
+            'medical_condition' =>
+                'nullable|string',
 
+            'allergies' =>
+                'nullable|string',
 
-            'emergency_contact'=>'nullable',
+            'chronic_disease' =>
+                'nullable|string',
 
+            'medical_notes' =>
+                'nullable|string',
 
-            'emergency_relationship'=>'nullable',
-
-
-            'emergency_phone'=>'nullable',
-
-
-
-            'blood_type'=>'nullable',
-
-
-            'medical_condition'=>'nullable',
-
-
-            'allergies'=>'nullable',
-
-
-            'chronic_disease'=>'nullable',
-
-
-            'medical_notes'=>'nullable',
-
-
-
-            'status'=>'nullable',
-
-            'phone' => 'nullable|string|max:50',
-
-            'email' => 'nullable|email|max:255',
-
-
+            'status' =>
+                'nullable|string|max:50',
         ]);
 
-
-
-
-
-
-
-        $resident->update($data);
-
-
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Record Profile Update Timeline
-        |--------------------------------------------------------------------------
-        */
-
-
-        $timelineService->record(
-
-
-            $resident->id,
-
-
-            ClinicalEventType::DOCUMENT_UPLOAD,
-
-
-            "Resident Profile Updated",
-
-
-            "Resident information updated.",
-
-
-            "Resident",
-
-
-            $resident->id
-
-
-
+        $resident->update(
+            $data
         );
 
-
-
-
-
-
-
+        $timelineService->record(
+            $resident->id,
+            ClinicalEventType::DOCUMENT_UPLOAD,
+            'Resident Profile Updated',
+            'Resident information updated.',
+            'Resident',
+            $resident->id
+        );
 
         return response()->json([
+            'message' =>
+                'Resident updated successfully',
 
-
-            'message'=>
-            'Resident updated successfully',
-
-
-
-            'resident'=>
-            $resident
-
-
-
+            'resident' =>
+                $resident,
         ]);
-
-
-
     }
-
-
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -479,108 +258,38 @@ class ResidentController extends Controller
     |--------------------------------------------------------------------------
     */
 
-
     public function destroy(
-
         $id,
-
         ClinicalTimelineService $timelineService
-
-    )
-    {
-
-
-
+    ) {
         $resident =
-        Resident::findOrFail($id);
-
-
-
-
-
-
-
+            Resident::findOrFail(
+                $id
+            );
 
         $resident->update([
+            'status' =>
+                'Discharged',
 
-
-            'status'=>
-            'Discharged',
-
-
-
-            'discharge_date'=>
-            now()
-
-
-
+            'discharge_date' =>
+                now(),
         ]);
-
-
-
-
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Create Discharge Timeline Event
-        |--------------------------------------------------------------------------
-        */
-
 
         $timelineService->record(
-
-
             $resident->id,
-
-
             ClinicalEventType::DISCHARGE,
-
-
-            "Resident Discharge",
-
-
-            "Resident discharged from SmartCare AI nursing facility.",
-
-
-            "Resident",
-
-
+            'Resident Discharge',
+            'Resident discharged from SmartCare AI nursing facility.',
+            'Resident',
             $resident->id
-
-
-
         );
 
-
-
-
-
-
-
-
         return response()->json([
+            'message' =>
+                'Resident discharged successfully',
 
-
-            'message'=>
-            'Resident discharged successfully',
-
-
-
-            'resident'=>
-            $resident
-
-
-
+            'resident' =>
+                $resident,
         ]);
-
-
-
     }
-
-
-
-
 }

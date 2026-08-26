@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 
 const STEPS = [
-    { id: 1, title: "Resident", subtitle: "Personal details" },
-    { id: 2, title: "Medical", subtitle: "Health information" },
-    { id: 3, title: "Family", subtitle: "Primary contact" },
-    { id: 4, title: "Admission", subtitle: "Admission details" },
-    { id: 5, title: "Consent", subtitle: "Agreement & consent" },
-    { id: 6, title: "Review", subtitle: "Check & complete" },
+    { id: 1, title: "Resident", subtitle: "Personal & room details" },
+    { id: 2, title: "Family", subtitle: "Primary contact" },
+    { id: 3, title: "Medical History", subtitle: "Health & background" },
+    { id: 4, title: "Hospital & Medication", subtitle: "Previous care & medicines" },
+    { id: 5, title: "Care Assessment", subtitle: "Admission care needs" },
+    { id: 6, title: "Consent", subtitle: "Agreement & consent" },
+    { id: 7, title: "Review", subtitle: "Check & complete" },
 ];
 
 const initialForm = {
@@ -19,13 +20,10 @@ const initialForm = {
     gender: "",
     nationality: "",
     address: "",
+    phone: "",
+    email: "",
     blood_type: "",
-
-    // Medical
-    medical_condition: "",
-    allergies: "",
-    chronic_disease: "",
-    medical_notes: "",
+    room_id: "",
 
     // Family / emergency contact
     contact_full_name: "",
@@ -39,7 +37,54 @@ const initialForm = {
     medication_notifications_enabled: true,
     care_notifications_enabled: true,
 
-    // Admission
+    // Resident medical master information
+    medical_condition: "",
+    allergies: "",
+    chronic_disease: "",
+    medical_notes: "",
+
+    // Admission medical history
+    primary_psychiatric_diagnosis: "",
+    other_diagnoses: "",
+    tobacco_use: false,
+    tobacco_amount_frequency: "",
+    alcohol_use: false,
+    alcohol_amount_frequency: "",
+    drug_use: false,
+    drug_type_frequency: "",
+    family_psychiatric_history: false,
+    family_psychiatric_history_details: "",
+    family_substance_abuse_history: false,
+    family_substance_abuse_history_details: "",
+    initial_observations: "",
+    additional_comments: "",
+
+    // Previous hospitalization rows
+    hospitalizations: [
+        {
+            hospital_name: "",
+            hospitalization_date: "",
+            reason: "",
+            notes: "",
+        },
+    ],
+
+    // Medication setup rows
+    medications: [
+        {
+            medication_id: "",
+            dosage_instruction: "",
+            dosage_quantity: "",
+            frequency: "",
+            time_slot: "",
+            scheduled_time: "",
+            start_date: "",
+            end_date: "",
+            prescribed_by: "",
+        },
+    ],
+
+    // Admission / care assessment
     admitted_at: "",
     admission_type: "NEW_ADMISSION",
     admission_source: "",
@@ -62,6 +107,19 @@ const initialForm = {
     family_notification_consent: false,
     terms_acknowledged: false,
     consent_notes: "",
+
+    // Structured Admission Agreement
+    agreement_version: "1.0",
+    agreement_title: "Consent / Admission Agreement",
+    monthly_fee: "",
+    medical_care_terms_acknowledged: false,
+    payment_fee_terms_acknowledged: false,
+    resident_conduct_terms_acknowledged: false,
+    belongings_terms_acknowledged: false,
+    termination_terms_acknowledged: false,
+    emergency_liability_terms_acknowledged: false,
+    risk_liability_terms_acknowledged: false,
+    death_event_terms_acknowledged: false,
 };
 
 function Admissions() {
@@ -74,6 +132,8 @@ function Admissions() {
     const [success, setSuccess] = useState("");
     const [admissions, setAdmissions] = useState([]);
     const [loadingAdmissions, setLoadingAdmissions] = useState(true);
+    const [rooms, setRooms] = useState([]);
+    const [medicationOptions, setMedicationOptions] = useState([]);
 
     useEffect(() => {
         const now = new Date();
@@ -87,6 +147,8 @@ function Admissions() {
         }));
 
         loadAdmissions();
+        loadRooms();
+        loadMedicationOptions();
     }, []);
 
     const loadAdmissions = async () => {
@@ -103,6 +165,108 @@ function Admissions() {
         } finally {
             setLoadingAdmissions(false);
         }
+    };
+
+    const loadRooms = async () => {
+        try {
+            const response = await api.get("/rooms");
+            const data = response.data?.rooms ?? response.data;
+            setRooms(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error("Unable to load rooms:", err);
+            setRooms([]);
+        }
+    };
+
+    const loadMedicationOptions = async () => {
+        try {
+            const response = await api.get("/medications");
+            const data = response.data?.data ?? response.data?.medications ?? response.data;
+            setMedicationOptions(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error("Unable to load medication catalogue:", err);
+            setMedicationOptions([]);
+        }
+    };
+
+    const updateHospitalization = (index, field, value) => {
+        setForm((current) => ({
+            ...current,
+            hospitalizations: current.hospitalizations.map((item, itemIndex) =>
+                itemIndex === index ? { ...item, [field]: value } : item
+            ),
+        }));
+        setError("");
+    };
+
+    const addHospitalization = () => {
+        setForm((current) => ({
+            ...current,
+            hospitalizations: [
+                ...current.hospitalizations,
+                { hospital_name: "", hospitalization_date: "", reason: "", notes: "" },
+            ],
+        }));
+    };
+
+    const removeHospitalization = (index) => {
+        setForm((current) => ({
+            ...current,
+            hospitalizations:
+                current.hospitalizations.length === 1
+                    ? [{ hospital_name: "", hospitalization_date: "", reason: "", notes: "" }]
+                    : current.hospitalizations.filter((_, itemIndex) => itemIndex !== index),
+        }));
+    };
+
+    const updateMedication = (index, field, value) => {
+        setForm((current) => ({
+            ...current,
+            medications: current.medications.map((item, itemIndex) =>
+                itemIndex === index ? { ...item, [field]: value } : item
+            ),
+        }));
+        setError("");
+    };
+
+    const addMedication = () => {
+        setForm((current) => ({
+            ...current,
+            medications: [
+                ...current.medications,
+                {
+                    medication_id: "",
+                    dosage_instruction: "",
+                    dosage_quantity: "",
+                    frequency: "",
+                    time_slot: "",
+                    scheduled_time: "",
+                    start_date: "",
+                    end_date: "",
+                    prescribed_by: "",
+                },
+            ],
+        }));
+    };
+
+    const removeMedication = (index) => {
+        setForm((current) => ({
+            ...current,
+            medications:
+                current.medications.length === 1
+                    ? [{
+                        medication_id: "",
+                        dosage_instruction: "",
+                        dosage_quantity: "",
+                        frequency: "",
+                        time_slot: "",
+                        scheduled_time: "",
+                        start_date: "",
+                        end_date: "",
+                        prescribed_by: "",
+                    }]
+                    : current.medications.filter((_, itemIndex) => itemIndex !== index),
+        }));
     };
 
     const updateField = (event) => {
@@ -141,7 +305,7 @@ function Admissions() {
             return "Resident full name is required.";
         }
 
-        if (currentStep === 3) {
+        if (currentStep === 2) {
             if (!form.contact_full_name.trim()) {
                 return "Primary family/contact name is required.";
             }
@@ -155,11 +319,11 @@ function Admissions() {
             }
         }
 
-        if (currentStep === 4 && !form.admitted_at) {
+        if (currentStep === 5 && !form.admitted_at) {
             return "Admission date and time is required.";
         }
 
-        if (currentStep === 5) {
+        if (currentStep === 6) {
             if (!form.consent_given_by.trim()) {
                 return "Please enter the name of the person providing consent.";
             }
@@ -170,10 +334,18 @@ function Admissions() {
                 form.medication_consent,
                 form.emergency_treatment_consent,
                 form.terms_acknowledged,
+                form.medical_care_terms_acknowledged,
+                form.payment_fee_terms_acknowledged,
+                form.resident_conduct_terms_acknowledged,
+                form.belongings_terms_acknowledged,
+                form.termination_terms_acknowledged,
+                form.emergency_liability_terms_acknowledged,
+                form.risk_liability_terms_acknowledged,
+                form.death_event_terms_acknowledged,
             ];
 
             if (!requiredConsents.every(Boolean)) {
-                return "Admission, care, medication, emergency treatment and terms acknowledgement must be accepted before completing admission.";
+                return "All required consent and admission agreement acknowledgements must be accepted before completing admission.";
             }
         }
 
@@ -181,7 +353,7 @@ function Admissions() {
     };
 
     const completeAdmission = async () => {
-        for (let currentStep = 1; currentStep <= 5; currentStep += 1) {
+        for (let currentStep = 1; currentStep <= 6; currentStep += 1) {
             const message = validateStep(currentStep);
 
             if (message) {
@@ -208,6 +380,9 @@ function Admissions() {
                 gender: emptyToNull(form.gender),
                 nationality: emptyToNull(form.nationality),
                 address: emptyToNull(form.address),
+                phone: emptyToNull(form.phone),
+                email: emptyToNull(form.email),
+                room_id: emptyToNull(form.room_id),
 
                 emergency_contact: form.contact_full_name.trim(),
                 emergency_relationship: form.contact_relationship.trim(),
@@ -262,6 +437,31 @@ function Admissions() {
                 special_care_instructions:
                     emptyToNull(form.special_care_instructions),
                 belongings_notes: emptyToNull(form.belongings_notes),
+                room_id: emptyToNull(form.room_id),
+                medical_history: {
+                    primary_psychiatric_diagnosis: emptyToNull(form.primary_psychiatric_diagnosis),
+                    other_diagnoses: emptyToNull(form.other_diagnoses),
+                    tobacco_use: form.tobacco_use,
+                    tobacco_amount_frequency: emptyToNull(form.tobacco_amount_frequency),
+                    alcohol_use: form.alcohol_use,
+                    alcohol_amount_frequency: emptyToNull(form.alcohol_amount_frequency),
+                    drug_use: form.drug_use,
+                    drug_type_frequency: emptyToNull(form.drug_type_frequency),
+                    family_psychiatric_history: form.family_psychiatric_history,
+                    family_psychiatric_history_details: emptyToNull(form.family_psychiatric_history_details),
+                    family_substance_abuse_history: form.family_substance_abuse_history,
+                    family_substance_abuse_history_details: emptyToNull(form.family_substance_abuse_history_details),
+                    initial_observations: emptyToNull(form.initial_observations),
+                    additional_comments: emptyToNull(form.additional_comments),
+                },
+                hospitalizations: form.hospitalizations
+                    .filter(hasHospitalizationData)
+                    .map((item) => ({
+                        hospital_name: emptyToNull(item.hospital_name),
+                        hospitalization_date: emptyToNull(item.hospitalization_date),
+                        reason: emptyToNull(item.reason),
+                        notes: emptyToNull(item.notes),
+                    })),
             });
 
             admissionId = admissionResponse.data?.admission?.id;
@@ -270,7 +470,26 @@ function Admissions() {
                 throw new Error("Admission was created but no admission ID was returned.");
             }
 
-            // 4. Save consent / agreement.
+            // 4. Add admission medications through the existing resident medication workflow.
+            for (const medication of form.medications.filter(hasMedicationData)) {
+                if (!medication.medication_id) {
+                    throw new Error("Please select a medicine for every medication row that contains medication details.");
+                }
+
+                await api.post(`/residents/${residentId}/medications`, {
+                    medication_id: Number(medication.medication_id),
+                    dosage_instruction: emptyToNull(medication.dosage_instruction),
+                    dosage_quantity: medication.dosage_quantity === "" ? null : Number(medication.dosage_quantity),
+                    frequency: emptyToNull(medication.frequency),
+                    time_slot: emptyToNull(medication.time_slot),
+                    scheduled_time: emptyToNull(medication.scheduled_time),
+                    start_date: emptyToNull(medication.start_date),
+                    end_date: emptyToNull(medication.end_date),
+                    prescribed_by: emptyToNull(medication.prescribed_by),
+                });
+            }
+
+            // 5. Save consent / agreement.
             await api.post(`/admissions/${admissionId}/consent`, {
                 consent_given_by: form.consent_given_by.trim(),
                 relationship: emptyToNull(form.consent_relationship),
@@ -286,16 +505,36 @@ function Admissions() {
                     form.family_notification_consent,
                 terms_acknowledged: form.terms_acknowledged,
                 consent_notes: emptyToNull(form.consent_notes),
+
+                agreement_version: emptyToNull(form.agreement_version),
+                agreement_title: emptyToNull(form.agreement_title),
+                monthly_fee: form.monthly_fee === "" ? null : Number(form.monthly_fee),
+                medical_care_terms_acknowledged: form.medical_care_terms_acknowledged,
+                payment_fee_terms_acknowledged: form.payment_fee_terms_acknowledged,
+                resident_conduct_terms_acknowledged: form.resident_conduct_terms_acknowledged,
+                belongings_terms_acknowledged: form.belongings_terms_acknowledged,
+                termination_terms_acknowledged: form.termination_terms_acknowledged,
+                emergency_liability_terms_acknowledged: form.emergency_liability_terms_acknowledged,
+                risk_liability_terms_acknowledged: form.risk_liability_terms_acknowledged,
+                death_event_terms_acknowledged: form.death_event_terms_acknowledged,
             });
 
-            // 5. Complete admission.
+            // 6. Complete admission.
             await api.post(`/admissions/${admissionId}/complete`);
 
             setSuccess(
                 `${form.full_name.trim()} has been admitted successfully.`
             );
 
-            setForm(initialForm);
+            const now = new Date();
+            const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16);
+
+            setForm({
+                ...initialForm,
+                admitted_at: local,
+            });
             setStep(1);
             await loadAdmissions();
 
@@ -394,7 +633,7 @@ function Admissions() {
 
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div className="border-b border-slate-200 bg-slate-50 p-3 sm:p-4">
-                    <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
                         {STEPS.map((item) => {
                             const active = item.id === step;
                             const complete = item.id < step;
@@ -455,214 +694,136 @@ function Admissions() {
                     {step === 1 && (
                         <StepCard
                             title="Resident Details"
-                            description="Enter the resident's core personal information. Only the full name is required by the current resident backend; the remaining fields can be completed where available."
+                            description="Enter the resident's personal and contact information and assign a room where available."
                         >
                             <div className="grid gap-5 md:grid-cols-2">
-                                <Field
-                                    label="Full Name"
-                                    name="full_name"
-                                    value={form.full_name}
-                                    onChange={updateField}
-                                    required
-                                    placeholder="Resident full name"
-                                />
-
-                                <Field
-                                    label="IC / Passport Number"
-                                    name="ic_number"
-                                    value={form.ic_number}
-                                    onChange={updateField}
-                                    placeholder="Identification number"
-                                />
-
-                                <Field
-                                    label="Date of Birth"
-                                    name="date_of_birth"
-                                    type="date"
-                                    value={form.date_of_birth}
-                                    onChange={updateField}
-                                />
-
+                                <Field label="Full Name" name="full_name" value={form.full_name} onChange={updateField} required placeholder="Resident full name" />
+                                <Field label="IC / Passport Number" name="ic_number" value={form.ic_number} onChange={updateField} placeholder="Identification number" />
+                                <Field label="Date of Birth" name="date_of_birth" type="date" value={form.date_of_birth} onChange={updateField} />
                                 <SelectField
                                     label="Gender"
                                     name="gender"
                                     value={form.gender}
                                     onChange={updateField}
-                                    options={[
-                                        ["", "Select gender"],
-                                        ["Male", "Male"],
-                                        ["Female", "Female"],
-                                        ["Other", "Other"],
-                                    ]}
+                                    options={[["", "Select gender"], ["Male", "Male"], ["Female", "Female"], ["Other", "Other"]]}
                                 />
-
-                                <Field
-                                    label="Nationality"
-                                    name="nationality"
-                                    value={form.nationality}
-                                    onChange={updateField}
-                                    placeholder="Example: Malaysian"
-                                />
-
+                                <Field label="Nationality" name="nationality" value={form.nationality} onChange={updateField} placeholder="Example: Malaysian" />
                                 <SelectField
                                     label="Blood Type"
                                     name="blood_type"
                                     value={form.blood_type}
                                     onChange={updateField}
+                                    options={[["", "Select blood type"], ["A+", "A+"], ["A-", "A-"], ["B+", "B+"], ["B-", "B-"], ["AB+", "AB+"], ["AB-", "AB-"], ["O+", "O+"], ["O-", "O-"]]}
+                                />
+                                <Field label="Resident Phone" name="phone" value={form.phone} onChange={updateField} placeholder="+60..." />
+                                <Field label="Resident Email" name="email" type="email" value={form.email} onChange={updateField} placeholder="Optional email" />
+                                <SelectField
+                                    label="Room"
+                                    name="room_id"
+                                    value={form.room_id}
+                                    onChange={updateField}
                                     options={[
-                                        ["", "Select blood type"],
-                                        ["A+", "A+"],
-                                        ["A-", "A-"],
-                                        ["B+", "B+"],
-                                        ["B-", "B-"],
-                                        ["AB+", "AB+"],
-                                        ["AB-", "AB-"],
-                                        ["O+", "O+"],
-                                        ["O-", "O-"],
+                                        ["", rooms.length ? "Select room" : "No rooms configured"],
+                                        ...rooms.map((room) => [
+                                            String(room.id),
+                                            `Room ${room.room_number}${room.floor ? ` · ${room.floor}` : ""}${room.room_type ? ` · ${room.room_type}` : ""}`,
+                                        ]),
                                     ]}
                                 />
                             </div>
-
-                            <TextArea
-                                label="Home Address"
-                                name="address"
-                                value={form.address}
-                                onChange={updateField}
-                                placeholder="Resident's home address"
-                            />
+                            <TextArea label="Home Address" name="address" value={form.address} onChange={updateField} placeholder="Resident's home address" />
                         </StepCard>
                     )}
 
                     {step === 2 && (
                         <StepCard
-                            title="Medical Information"
-                            description="Record the key health information staff should know at the point of admission."
+                            title="Family & Emergency Contact"
+                            description="Create the resident's primary family or guardian contact. These details will also appear in the resident Family tab."
                         >
                             <div className="grid gap-5 md:grid-cols-2">
-                                <TextArea
-                                    label="Medical Condition"
-                                    name="medical_condition"
-                                    value={form.medical_condition}
-                                    onChange={updateField}
-                                    placeholder="Current diagnoses or medical conditions"
-                                />
-
-                                <TextArea
-                                    label="Allergies"
-                                    name="allergies"
-                                    value={form.allergies}
-                                    onChange={updateField}
-                                    placeholder="Medication, food or other allergies"
-                                />
-
-                                <TextArea
-                                    label="Chronic Disease"
-                                    name="chronic_disease"
-                                    value={form.chronic_disease}
-                                    onChange={updateField}
-                                    placeholder="Diabetes, hypertension, etc."
-                                />
-
-                                <TextArea
-                                    label="Medical Notes"
-                                    name="medical_notes"
-                                    value={form.medical_notes}
-                                    onChange={updateField}
-                                    placeholder="Other important clinical information"
-                                />
+                                <Field label="Contact Full Name" name="contact_full_name" value={form.contact_full_name} onChange={updateField} required placeholder="Family member / guardian" />
+                                <Field label="Relationship" name="contact_relationship" value={form.contact_relationship} onChange={updateField} required placeholder="Example: Daughter" />
+                                <Field label="Phone Number" name="contact_phone" value={form.contact_phone} onChange={updateField} required placeholder="+60..." />
+                                <Field label="WhatsApp Number" name="contact_whatsapp" value={form.contact_whatsapp} onChange={updateField} placeholder="Leave blank to use phone number" />
+                            </div>
+                            <TextArea label="Contact Notes" name="contact_notes" value={form.contact_notes} onChange={updateField} placeholder="Optional communication notes" />
+                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                <Toggle name="is_primary" checked={form.is_primary} onChange={updateField} title="Primary Contact" description="Main person to contact" />
+                                <Toggle name="is_emergency_contact" checked={form.is_emergency_contact} onChange={updateField} title="Emergency Contact" description="May be contacted in emergencies" />
+                                <Toggle name="whatsapp_enabled" checked={form.whatsapp_enabled} onChange={updateField} title="WhatsApp Enabled" description="Allow WhatsApp communication" />
+                                <Toggle name="medication_notifications_enabled" checked={form.medication_notifications_enabled} onChange={updateField} title="Medication Updates" description="Receive medication notifications" />
+                                <Toggle name="care_notifications_enabled" checked={form.care_notifications_enabled} onChange={updateField} title="Care Updates" description="Receive care notifications" />
                             </div>
                         </StepCard>
                     )}
 
                     {step === 3 && (
                         <StepCard
-                            title="Family & Emergency Contact"
-                            description="Create the resident's primary contact. This information will also be stored in the resident's Family tab."
+                            title="Medical History"
+                            description="Record the resident's core clinical information and the structured medical, psychiatric and substance-use history collected during admission."
                         >
+                            <SectionTitle title="Current Medical Information" />
                             <div className="grid gap-5 md:grid-cols-2">
-                                <Field
-                                    label="Contact Full Name"
-                                    name="contact_full_name"
-                                    value={form.contact_full_name}
-                                    onChange={updateField}
-                                    required
-                                    placeholder="Family member / guardian"
-                                />
+                                <TextArea label="Medical Condition" name="medical_condition" value={form.medical_condition} onChange={updateField} placeholder="Current diagnoses or medical conditions" />
+                                <TextArea label="Allergies" name="allergies" value={form.allergies} onChange={updateField} placeholder="Medication, food or other allergies" />
+                                <TextArea label="Chronic Disease" name="chronic_disease" value={form.chronic_disease} onChange={updateField} placeholder="Diabetes, hypertension, etc." />
+                                <TextArea label="Medical Notes" name="medical_notes" value={form.medical_notes} onChange={updateField} placeholder="Other important clinical information" />
+                            </div>
 
-                                <Field
-                                    label="Relationship"
-                                    name="contact_relationship"
-                                    value={form.contact_relationship}
-                                    onChange={updateField}
-                                    required
-                                    placeholder="Example: Daughter"
-                                />
+                            <SectionTitle title="Admission Medical & Psychiatric History" />
+                            <div className="grid gap-5 md:grid-cols-2">
+                                <TextArea label="Primary Psychiatric Diagnosis" name="primary_psychiatric_diagnosis" value={form.primary_psychiatric_diagnosis} onChange={updateField} placeholder="If applicable" />
+                                <TextArea label="Other Diagnoses" name="other_diagnoses" value={form.other_diagnoses} onChange={updateField} placeholder="Other relevant diagnoses" />
+                            </div>
 
-                                <Field
-                                    label="Phone Number"
-                                    name="contact_phone"
-                                    value={form.contact_phone}
+                            <div className="grid gap-4 lg:grid-cols-3">
+                                <HistoryToggle
+                                    title="Tobacco Use"
+                                    name="tobacco_use"
+                                    checked={form.tobacco_use}
                                     onChange={updateField}
-                                    required
-                                    placeholder="+60..."
+                                    detailName="tobacco_amount_frequency"
+                                    detailValue={form.tobacco_amount_frequency}
+                                    detailPlaceholder="Amount / frequency"
                                 />
-
-                                <Field
-                                    label="WhatsApp Number"
-                                    name="contact_whatsapp"
-                                    value={form.contact_whatsapp}
+                                <HistoryToggle
+                                    title="Alcohol Use"
+                                    name="alcohol_use"
+                                    checked={form.alcohol_use}
                                     onChange={updateField}
-                                    placeholder="Leave blank to use phone number"
+                                    detailName="alcohol_amount_frequency"
+                                    detailValue={form.alcohol_amount_frequency}
+                                    detailPlaceholder="Amount / frequency"
+                                />
+                                <HistoryToggle
+                                    title="Drug Use"
+                                    name="drug_use"
+                                    checked={form.drug_use}
+                                    onChange={updateField}
+                                    detailName="drug_type_frequency"
+                                    detailValue={form.drug_type_frequency}
+                                    detailPlaceholder="Type / frequency"
                                 />
                             </div>
 
-                            <TextArea
-                                label="Contact Notes"
-                                name="contact_notes"
-                                value={form.contact_notes}
-                                onChange={updateField}
-                                placeholder="Optional notes about communication preferences or availability"
-                            />
-
-                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                <Toggle
-                                    name="is_primary"
-                                    checked={form.is_primary}
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <HistoryToggle
+                                    title="Family Psychiatric History"
+                                    name="family_psychiatric_history"
+                                    checked={form.family_psychiatric_history}
                                     onChange={updateField}
-                                    title="Primary Contact"
-                                    description="Main person to contact"
+                                    detailName="family_psychiatric_history_details"
+                                    detailValue={form.family_psychiatric_history_details}
+                                    detailPlaceholder="Details"
                                 />
-
-                                <Toggle
-                                    name="is_emergency_contact"
-                                    checked={form.is_emergency_contact}
+                                <HistoryToggle
+                                    title="Family Substance Abuse History"
+                                    name="family_substance_abuse_history"
+                                    checked={form.family_substance_abuse_history}
                                     onChange={updateField}
-                                    title="Emergency Contact"
-                                    description="May be contacted in emergencies"
-                                />
-
-                                <Toggle
-                                    name="whatsapp_enabled"
-                                    checked={form.whatsapp_enabled}
-                                    onChange={updateField}
-                                    title="WhatsApp Enabled"
-                                    description="Allow WhatsApp communication"
-                                />
-
-                                <Toggle
-                                    name="medication_notifications_enabled"
-                                    checked={form.medication_notifications_enabled}
-                                    onChange={updateField}
-                                    title="Medication Updates"
-                                    description="Receive medication notifications"
-                                />
-
-                                <Toggle
-                                    name="care_notifications_enabled"
-                                    checked={form.care_notifications_enabled}
-                                    onChange={updateField}
-                                    title="Care Updates"
-                                    description="Receive care notifications"
+                                    detailName="family_substance_abuse_history_details"
+                                    detailValue={form.family_substance_abuse_history_details}
+                                    detailPlaceholder="Details"
                                 />
                             </div>
                         </StepCard>
@@ -670,200 +831,171 @@ function Admissions() {
 
                     {step === 4 && (
                         <StepCard
-                            title="Admission Details"
-                            description="Record the admission episode. This stays separate from the resident master profile so SmartCare can support future readmissions."
+                            title="Previous Hospitalisation & Medication"
+                            description="Record previous hospital stays and set up medications that should become part of the resident's normal medication workflow."
                         >
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <Field
-                                    label="Admission Date & Time"
-                                    name="admitted_at"
-                                    type="datetime-local"
-                                    value={form.admitted_at}
-                                    onChange={updateField}
-                                    required
-                                />
+                            <SectionTitle
+                                title="Previous Hospitalisations"
+                                action={
+                                    <button type="button" onClick={addHospitalization} className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100">
+                                        + Add Hospitalisation
+                                    </button>
+                                }
+                            />
 
-                                <SelectField
-                                    label="Admission Type"
-                                    name="admission_type"
-                                    value={form.admission_type}
-                                    onChange={updateField}
-                                    options={[
-                                        ["NEW_ADMISSION", "New Admission"],
-                                        ["READMISSION", "Readmission"],
-                                        ["TRANSFER", "Transfer"],
-                                    ]}
-                                />
-
-                                <Field
-                                    label="Admission Source"
-                                    name="admission_source"
-                                    value={form.admission_source}
-                                    onChange={updateField}
-                                    placeholder="Home, hospital, other facility..."
-                                />
+                            <div className="space-y-4">
+                                {form.hospitalizations.map((item, index) => (
+                                    <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                                        <div className="mb-4 flex items-center justify-between">
+                                            <h4 className="font-bold text-slate-700">Hospitalisation {index + 1}</h4>
+                                            <button type="button" onClick={() => removeHospitalization(index)} className="text-sm font-semibold text-red-600 hover:text-red-700">Remove</button>
+                                        </div>
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <Field label="Hospital Name" value={item.hospital_name} onChange={(e) => updateHospitalization(index, "hospital_name", e.target.value)} placeholder="Hospital / facility" />
+                                            <Field label="Date" type="date" value={item.hospitalization_date} onChange={(e) => updateHospitalization(index, "hospitalization_date", e.target.value)} />
+                                            <TextArea label="Reason" value={item.reason} onChange={(e) => updateHospitalization(index, "reason", e.target.value)} placeholder="Reason for hospitalisation" />
+                                            <TextArea label="Notes" value={item.notes} onChange={(e) => updateHospitalization(index, "notes", e.target.value)} placeholder="Optional notes" />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
 
-                            <div className="grid gap-5 md:grid-cols-2">
-                                <TextArea
-                                    label="Reason for Admission"
-                                    name="reason_for_admission"
-                                    value={form.reason_for_admission}
-                                    onChange={updateField}
-                                    placeholder="Reason the resident is entering care"
-                                />
+                            <SectionTitle
+                                title="Medication Setup"
+                                action={
+                                    <button type="button" onClick={addMedication} className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100">
+                                        + Add Medication
+                                    </button>
+                                }
+                            />
 
-                                <TextArea
-                                    label="Admission Medical Summary"
-                                    name="medical_summary"
-                                    value={form.medical_summary}
-                                    onChange={updateField}
-                                    placeholder="Clinical summary at admission"
-                                />
+                            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+                                Medicines entered here use SmartCare's existing resident-medication workflow. Leave this section blank if medication will be configured later from the resident Medication tab.
+                            </div>
 
-                                <TextArea
-                                    label="Mobility Notes"
-                                    name="mobility_notes"
-                                    value={form.mobility_notes}
-                                    onChange={updateField}
-                                    placeholder="Walking aid, wheelchair, fall assistance..."
-                                />
-
-                                <TextArea
-                                    label="Dietary Notes"
-                                    name="dietary_notes"
-                                    value={form.dietary_notes}
-                                    onChange={updateField}
-                                    placeholder="Dietary restrictions or requirements"
-                                />
-
-                                <TextArea
-                                    label="Special Care Instructions"
-                                    name="special_care_instructions"
-                                    value={form.special_care_instructions}
-                                    onChange={updateField}
-                                    placeholder="Special monitoring or care instructions"
-                                />
-
-                                <TextArea
-                                    label="Belongings Notes"
-                                    name="belongings_notes"
-                                    value={form.belongings_notes}
-                                    onChange={updateField}
-                                    placeholder="Important personal belongings received at admission"
-                                />
+                            <div className="space-y-4">
+                                {form.medications.map((item, index) => (
+                                    <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                                        <div className="mb-4 flex items-center justify-between">
+                                            <h4 className="font-bold text-slate-700">Medication {index + 1}</h4>
+                                            <button type="button" onClick={() => removeMedication(index)} className="text-sm font-semibold text-red-600 hover:text-red-700">Remove</button>
+                                        </div>
+                                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                            <SelectField
+                                                label="Medicine"
+                                                value={item.medication_id}
+                                                onChange={(e) => updateMedication(index, "medication_id", e.target.value)}
+                                                options={[
+                                                    ["", medicationOptions.length ? "Select medicine" : "No medicines available"],
+                                                    ...medicationOptions.map((medicine) => [
+                                                        String(medicine.id),
+                                                        `${medicine.medicine_name}${medicine.dosage ? ` · ${medicine.dosage}` : ""}`,
+                                                    ]),
+                                                ]}
+                                            />
+                                            <Field label="Dosage Instruction" value={item.dosage_instruction} onChange={(e) => updateMedication(index, "dosage_instruction", e.target.value)} placeholder="e.g. After food" />
+                                            <Field label="Dosage Quantity" type="number" step="0.01" value={item.dosage_quantity} onChange={(e) => updateMedication(index, "dosage_quantity", e.target.value)} placeholder="1" />
+                                            <Field label="Frequency" value={item.frequency} onChange={(e) => updateMedication(index, "frequency", e.target.value)} placeholder="e.g. Daily" />
+                                            <SelectField
+                                                label="Round / Time Slot"
+                                                value={item.time_slot}
+                                                onChange={(e) => updateMedication(index, "time_slot", e.target.value)}
+                                                options={[["", "Select round"], ["AM", "AM"], ["PM", "PM"], ["Night", "Night"]]}
+                                            />
+                                            <Field label="Scheduled Time" type="time" value={item.scheduled_time} onChange={(e) => updateMedication(index, "scheduled_time", e.target.value)} />
+                                            <Field label="Start Date" type="date" value={item.start_date} onChange={(e) => updateMedication(index, "start_date", e.target.value)} />
+                                            <Field label="End Date" type="date" value={item.end_date} onChange={(e) => updateMedication(index, "end_date", e.target.value)} />
+                                            <Field label="Prescribed By" value={item.prescribed_by} onChange={(e) => updateMedication(index, "prescribed_by", e.target.value)} placeholder="Doctor / prescriber" />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </StepCard>
                     )}
 
                     {step === 5 && (
                         <StepCard
-                            title="Consent & Admission Agreement"
-                            description="Record who is providing consent and the permissions acknowledged during admission."
+                            title="Admission & Care Assessment"
+                            description="Record the admission episode and the resident's immediate care needs, observations and belongings."
                         >
                             <div className="grid gap-5 md:grid-cols-2">
-                                <Field
-                                    label="Consent Given By"
-                                    name="consent_given_by"
-                                    value={form.consent_given_by}
+                                <Field label="Admission Date & Time" name="admitted_at" type="datetime-local" value={form.admitted_at} onChange={updateField} required />
+                                <SelectField
+                                    label="Admission Type"
+                                    name="admission_type"
+                                    value={form.admission_type}
                                     onChange={updateField}
-                                    required
-                                    placeholder="Resident / family member / guardian"
+                                    options={[["NEW_ADMISSION", "New Admission"], ["READMISSION", "Readmission"], ["TRANSFER", "Transfer"]]}
                                 />
-
-                                <Field
-                                    label="Relationship"
-                                    name="consent_relationship"
-                                    value={form.consent_relationship}
-                                    onChange={updateField}
-                                    placeholder="Example: Daughter / Self"
-                                />
-
-                                <Field
-                                    label="Contact Number"
-                                    name="consent_contact_number"
-                                    value={form.consent_contact_number}
-                                    onChange={updateField}
-                                    placeholder="+60..."
-                                />
+                                <Field label="Admission Source" name="admission_source" value={form.admission_source} onChange={updateField} placeholder="Home, hospital, other facility..." />
                             </div>
 
-                            <div className="grid gap-3 md:grid-cols-2">
-                                <ConsentToggle
-                                    name="admission_consent"
-                                    checked={form.admission_consent}
-                                    onChange={updateField}
-                                    title="Admission Consent *"
-                                    description="Consent is given for admission into the care facility."
-                                />
-
-                                <ConsentToggle
-                                    name="care_consent"
-                                    checked={form.care_consent}
-                                    onChange={updateField}
-                                    title="Care Consent *"
-                                    description="Consent is given for routine nursing and care activities."
-                                />
-
-                                <ConsentToggle
-                                    name="medication_consent"
-                                    checked={form.medication_consent}
-                                    onChange={updateField}
-                                    title="Medication Consent *"
-                                    description="Consent is given for prescribed medication administration."
-                                />
-
-                                <ConsentToggle
-                                    name="emergency_treatment_consent"
-                                    checked={form.emergency_treatment_consent}
-                                    onChange={updateField}
-                                    title="Emergency Treatment Consent *"
-                                    description="Consent is given for appropriate emergency treatment when required."
-                                />
-
-                                <ConsentToggle
-                                    name="information_sharing_consent"
-                                    checked={form.information_sharing_consent}
-                                    onChange={updateField}
-                                    title="Information Sharing"
-                                    description="Permit appropriate sharing of care information with relevant parties."
-                                />
-
-                                <ConsentToggle
-                                    name="family_notification_consent"
-                                    checked={form.family_notification_consent}
-                                    onChange={updateField}
-                                    title="Family Notifications"
-                                    description="Permit family care and medication notifications."
-                                />
-
-                                <ConsentToggle
-                                    name="terms_acknowledged"
-                                    checked={form.terms_acknowledged}
-                                    onChange={updateField}
-                                    title="Terms Acknowledged *"
-                                    description="The admission terms and declarations have been understood and acknowledged."
-                                />
-                            </div>
-
-                            <TextArea
-                                label="Consent Notes"
-                                name="consent_notes"
-                                value={form.consent_notes}
-                                onChange={updateField}
-                                placeholder="Optional consent, guardian or witness notes"
-                            />
-
-                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
-                                Fields marked * are currently required by the admission completion workflow. Information-sharing and family-notification consent remain explicit optional permissions.
+                            <div className="grid gap-5 md:grid-cols-2">
+                                <TextArea label="Reason for Admission" name="reason_for_admission" value={form.reason_for_admission} onChange={updateField} placeholder="Reason the resident is entering care" />
+                                <TextArea label="Admission Medical Summary" name="medical_summary" value={form.medical_summary} onChange={updateField} placeholder="Clinical summary at admission" />
+                                <TextArea label="Mobility Notes" name="mobility_notes" value={form.mobility_notes} onChange={updateField} placeholder="Walking aid, wheelchair, fall assistance..." />
+                                <TextArea label="Dietary Notes" name="dietary_notes" value={form.dietary_notes} onChange={updateField} placeholder="Dietary restrictions or requirements" />
+                                <TextArea label="Special Care Instructions" name="special_care_instructions" value={form.special_care_instructions} onChange={updateField} placeholder="Special monitoring or care instructions" />
+                                <TextArea label="Belongings Notes" name="belongings_notes" value={form.belongings_notes} onChange={updateField} placeholder="Personal belongings received at admission" />
+                                <TextArea label="Initial Observations" name="initial_observations" value={form.initial_observations} onChange={updateField} placeholder="Initial behavioural / clinical observations" />
+                                <TextArea label="Additional Comments" name="additional_comments" value={form.additional_comments} onChange={updateField} placeholder="Any other admission comments" />
                             </div>
                         </StepCard>
                     )}
 
                     {step === 6 && (
                         <StepCard
+                            title="Consent & Admission Agreement"
+                            description="Record the person giving consent, core care permissions and each section of the structured admission agreement."
+                        >
+                            <SectionTitle title="Consent Provider" />
+                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                                <Field label="Consent Given By" name="consent_given_by" value={form.consent_given_by} onChange={updateField} required placeholder="Resident / family member / guardian" />
+                                <Field label="Relationship" name="consent_relationship" value={form.consent_relationship} onChange={updateField} placeholder="Example: Daughter / Self" />
+                                <Field label="Contact Number" name="consent_contact_number" value={form.consent_contact_number} onChange={updateField} placeholder="+60..." />
+                            </div>
+
+                            <SectionTitle title="Care Permissions" />
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ConsentToggle name="admission_consent" checked={form.admission_consent} onChange={updateField} title="Admission Consent *" description="Consent is given for admission into the care facility." />
+                                <ConsentToggle name="care_consent" checked={form.care_consent} onChange={updateField} title="Care Consent *" description="Consent is given for routine nursing and care activities." />
+                                <ConsentToggle name="medication_consent" checked={form.medication_consent} onChange={updateField} title="Medication Consent *" description="Consent is given for prescribed medication administration." />
+                                <ConsentToggle name="emergency_treatment_consent" checked={form.emergency_treatment_consent} onChange={updateField} title="Emergency Treatment Consent *" description="Consent is given for appropriate emergency treatment when required." />
+                                <ConsentToggle name="information_sharing_consent" checked={form.information_sharing_consent} onChange={updateField} title="Information Sharing" description="Permit appropriate sharing of care information with relevant parties." />
+                                <ConsentToggle name="family_notification_consent" checked={form.family_notification_consent} onChange={updateField} title="Family Notifications" description="Permit family care and medication notifications." />
+                                <ConsentToggle name="terms_acknowledged" checked={form.terms_acknowledged} onChange={updateField} title="General Terms Acknowledged *" description="The admission terms and declarations have been understood." />
+                            </div>
+
+                            <SectionTitle title="Admission Agreement" />
+                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                                <Field label="Agreement Title" name="agreement_title" value={form.agreement_title} onChange={updateField} />
+                                <Field label="Agreement Version" name="agreement_version" value={form.agreement_version} onChange={updateField} placeholder="1.0" />
+                                <Field label="Monthly Fee" name="monthly_fee" type="number" step="0.01" min="0" value={form.monthly_fee} onChange={updateField} placeholder="0.00" />
+                            </div>
+
+                            <div className="grid gap-3 md:grid-cols-2">
+                                <ConsentToggle name="medical_care_terms_acknowledged" checked={form.medical_care_terms_acknowledged} onChange={updateField} title="1. Medical & Care Terms *" description="Medical and care responsibilities have been read and acknowledged." />
+                                <ConsentToggle name="payment_fee_terms_acknowledged" checked={form.payment_fee_terms_acknowledged} onChange={updateField} title="2. Payment & Fee Terms *" description="Fees, payment responsibilities and related terms have been acknowledged." />
+                                <ConsentToggle name="resident_conduct_terms_acknowledged" checked={form.resident_conduct_terms_acknowledged} onChange={updateField} title="3. Resident Conduct Terms *" description="Resident conduct and facility expectations have been acknowledged." />
+                                <ConsentToggle name="belongings_terms_acknowledged" checked={form.belongings_terms_acknowledged} onChange={updateField} title="4. Belongings Terms *" description="Personal belongings responsibilities have been acknowledged." />
+                                <ConsentToggle name="termination_terms_acknowledged" checked={form.termination_terms_acknowledged} onChange={updateField} title="5. Termination Terms *" description="Termination and discharge-related terms have been acknowledged." />
+                                <ConsentToggle name="emergency_liability_terms_acknowledged" checked={form.emergency_liability_terms_acknowledged} onChange={updateField} title="6. Emergency & Liability Terms *" description="Emergency response and liability terms have been acknowledged." />
+                                <ConsentToggle name="risk_liability_terms_acknowledged" checked={form.risk_liability_terms_acknowledged} onChange={updateField} title="7. Risk & Liability Terms *" description="Relevant risk and liability declarations have been acknowledged." />
+                                <ConsentToggle name="death_event_terms_acknowledged" checked={form.death_event_terms_acknowledged} onChange={updateField} title="8. Death Event Terms *" description="The agreement provisions concerning a death event have been acknowledged." />
+                            </div>
+
+                            <TextArea label="Consent / Agreement Notes" name="consent_notes" value={form.consent_notes} onChange={updateField} placeholder="Optional guardian, witness or agreement notes" />
+
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+                                All eight structured agreement sections are required in this digital workflow. Information-sharing and family-notification permissions remain explicit optional consents.
+                            </div>
+                        </StepCard>
+                    )}
+
+                    {step === 7 && (
+                        <StepCard
                             title="Review & Complete Admission"
-                            description="Check the information below before creating the resident and completing the admission."
+                            description="Review the admission before SmartCare creates and activates the resident's complete admission record."
                         >
                             <div className="grid gap-4 lg:grid-cols-2">
                                 <ReviewCard
@@ -871,41 +1003,45 @@ function Admissions() {
                                     rows={[
                                         ["Name", form.full_name],
                                         ["IC / Passport", form.ic_number],
-                                        ["Date of Birth", form.date_of_birth],
-                                        ["Gender", form.gender],
-                                        ["Nationality", form.nationality],
+                                        ["Phone", form.phone],
+                                        ["Email", form.email],
+                                        ["Room", roomLabel(form.room_id, rooms)],
                                         ["Blood Type", form.blood_type],
                                     ]}
                                     onEdit={() => setStep(1)}
                                 />
-
-                                <ReviewCard
-                                    title="Medical"
-                                    rows={[
-                                        ["Condition", form.medical_condition],
-                                        ["Allergies", form.allergies],
-                                        ["Chronic Disease", form.chronic_disease],
-                                        ["Notes", form.medical_notes],
-                                    ]}
-                                    onEdit={() => setStep(2)}
-                                />
-
                                 <ReviewCard
                                     title="Family Contact"
                                     rows={[
                                         ["Name", form.contact_full_name],
                                         ["Relationship", form.contact_relationship],
                                         ["Phone", form.contact_phone],
-                                        [
-                                            "WhatsApp",
-                                            form.contact_whatsapp || form.contact_phone,
-                                        ],
+                                        ["WhatsApp", form.contact_whatsapp || form.contact_phone],
+                                    ]}
+                                    onEdit={() => setStep(2)}
+                                />
+                                <ReviewCard
+                                    title="Medical History"
+                                    rows={[
+                                        ["Condition", form.medical_condition],
+                                        ["Allergies", form.allergies],
+                                        ["Psychiatric Diagnosis", form.primary_psychiatric_diagnosis],
+                                        ["Tobacco Use", yesNo(form.tobacco_use)],
+                                        ["Alcohol Use", yesNo(form.alcohol_use)],
+                                        ["Drug Use", yesNo(form.drug_use)],
                                     ]}
                                     onEdit={() => setStep(3)}
                                 />
-
                                 <ReviewCard
-                                    title="Admission"
+                                    title="Hospital & Medication"
+                                    rows={[
+                                        ["Hospitalisations", String(form.hospitalizations.filter(hasHospitalizationData).length)],
+                                        ["Medications to Add", String(form.medications.filter(hasMedicationData).length)],
+                                    ]}
+                                    onEdit={() => setStep(4)}
+                                />
+                                <ReviewCard
+                                    title="Care Assessment"
                                     rows={[
                                         ["Date & Time", displayDateTime(form.admitted_at)],
                                         ["Type", prettyLabel(form.admission_type)],
@@ -914,40 +1050,34 @@ function Admissions() {
                                         ["Mobility", form.mobility_notes],
                                         ["Diet", form.dietary_notes],
                                     ]}
-                                    onEdit={() => setStep(4)}
+                                    onEdit={() => setStep(5)}
                                 />
-
                                 <ReviewCard
-                                    title="Consent"
+                                    title="Consent & Agreement"
                                     rows={[
                                         ["Given By", form.consent_given_by],
-                                        ["Relationship", form.consent_relationship],
                                         ["Admission", yesNo(form.admission_consent)],
                                         ["Care", yesNo(form.care_consent)],
                                         ["Medication", yesNo(form.medication_consent)],
-                                        [
-                                            "Emergency Treatment",
-                                            yesNo(form.emergency_treatment_consent),
-                                        ],
-                                        [
-                                            "Family Notifications",
-                                            yesNo(form.family_notification_consent),
-                                        ],
+                                        ["Agreement", form.agreement_title],
+                                        ["Version", form.agreement_version],
+                                        ["Monthly Fee", form.monthly_fee ? `RM ${form.monthly_fee}` : "—"],
+                                        ["8 Agreement Sections", agreementCount(form) === 8 ? "All acknowledged" : `${agreementCount(form)} of 8`],
                                     ]}
-                                    onEdit={() => setStep(5)}
+                                    onEdit={() => setStep(6)}
                                 />
                             </div>
 
                             <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-                                <h3 className="font-bold text-slate-800">
-                                    What SmartCare will create
-                                </h3>
-
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <h3 className="font-bold text-slate-800">What SmartCare will create</h3>
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                     <Outcome label="Resident Profile" />
                                     <Outcome label="Family Contact" />
                                     <Outcome label="Admission Episode" />
-                                    <Outcome label="Consent Record" />
+                                    <Outcome label="Medical History" />
+                                    <Outcome label="Hospitalisation History" />
+                                    <Outcome label="Consent & Agreement" />
+                                    <Outcome label="Medication Setup" />
                                 </div>
                             </div>
                         </StepCard>
@@ -1194,6 +1324,46 @@ function ConsentToggle({
     );
 }
 
+function SectionTitle({ title, action = null }) {
+    return (
+        <div className="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-base font-bold text-slate-800">{title}</h3>
+            {action}
+        </div>
+    );
+}
+
+function HistoryToggle({
+    title,
+    name,
+    checked,
+    onChange,
+    detailName,
+    detailValue,
+    detailPlaceholder,
+}) {
+    return (
+        <div className={`rounded-xl border p-4 ${checked ? "border-blue-200 bg-blue-50" : "border-slate-200"}`}>
+            <Toggle
+                title={title}
+                description={checked ? "Yes" : "No"}
+                name={name}
+                checked={checked}
+                onChange={onChange}
+            />
+            {checked && (
+                <input
+                    name={detailName}
+                    value={detailValue}
+                    onChange={onChange}
+                    placeholder={detailPlaceholder}
+                    className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+            )}
+        </div>
+    );
+}
+
 function ReviewCard({ title, rows, onEdit }) {
     return (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -1254,6 +1424,48 @@ function StatusBadge({ status }) {
             {prettyLabel(normalized || "UNKNOWN")}
         </span>
     );
+}
+
+function hasHospitalizationData(item) {
+    return Boolean(
+        item?.hospital_name?.trim() ||
+        item?.hospitalization_date ||
+        item?.reason?.trim() ||
+        item?.notes?.trim()
+    );
+}
+
+function hasMedicationData(item) {
+    return Boolean(
+        item?.medication_id ||
+        item?.dosage_instruction?.trim() ||
+        item?.dosage_quantity ||
+        item?.frequency?.trim() ||
+        item?.time_slot ||
+        item?.scheduled_time ||
+        item?.start_date ||
+        item?.end_date ||
+        item?.prescribed_by?.trim()
+    );
+}
+
+function agreementCount(form) {
+    return [
+        form.medical_care_terms_acknowledged,
+        form.payment_fee_terms_acknowledged,
+        form.resident_conduct_terms_acknowledged,
+        form.belongings_terms_acknowledged,
+        form.termination_terms_acknowledged,
+        form.emergency_liability_terms_acknowledged,
+        form.risk_liability_terms_acknowledged,
+        form.death_event_terms_acknowledged,
+    ].filter(Boolean).length;
+}
+
+function roomLabel(roomId, rooms) {
+    if (!roomId) return "Not assigned";
+    const room = rooms.find((item) => String(item.id) === String(roomId));
+    return room ? `Room ${room.room_number}` : `Room #${roomId}`;
 }
 
 function emptyToNull(value) {

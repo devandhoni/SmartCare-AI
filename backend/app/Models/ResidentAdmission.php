@@ -31,31 +31,24 @@ class ResidentAdmission extends Model
 
     public function resident()
     {
-        return $this->belongsTo(
-            Resident::class
-        );
+        return $this->belongsTo(Resident::class);
     }
 
     public function admittedBy()
     {
-        return $this->belongsTo(
-            User::class,
-            'admitted_by'
-        );
+        return $this->belongsTo(User::class, 'admitted_by');
     }
 
     public function completedBy()
     {
-        return $this->belongsTo(
-            User::class,
-            'completed_by'
-        );
+        return $this->belongsTo(User::class, 'completed_by');
     }
 
     public function consent()
     {
         return $this->hasOne(
-            ResidentAdmissionConsent::class
+            ResidentAdmissionConsent::class,
+            'resident_admission_id'
         );
     }
 

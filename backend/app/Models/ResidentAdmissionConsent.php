@@ -26,7 +26,6 @@ class ResidentAdmissionConsent extends Model
         'agreement_version',
         'agreement_title',
         'monthly_fee',
-
         'medical_care_terms_acknowledged',
         'payment_fee_terms_acknowledged',
         'resident_conduct_terms_acknowledged',
@@ -35,7 +34,6 @@ class ResidentAdmissionConsent extends Model
         'emergency_liability_terms_acknowledged',
         'risk_liability_terms_acknowledged',
         'death_event_terms_acknowledged',
-
         'agreement_acknowledged_at',
     ];
 
@@ -48,35 +46,16 @@ class ResidentAdmissionConsent extends Model
         'family_notification_consent' => 'boolean',
         'terms_acknowledged' => 'boolean',
         'consented_at' => 'datetime',
-        'medical_care_terms_acknowledged' =>
-            'boolean',
-
-        'payment_fee_terms_acknowledged' =>
-            'boolean',
-
-        'resident_conduct_terms_acknowledged' =>
-            'boolean',
-
-        'belongings_terms_acknowledged' =>
-            'boolean',
-
-        'termination_terms_acknowledged' =>
-            'boolean',
-
-        'emergency_liability_terms_acknowledged' =>
-            'boolean',
-
-        'risk_liability_terms_acknowledged' =>
-            'boolean',
-
-        'death_event_terms_acknowledged' =>
-            'boolean',
-
-        'agreement_acknowledged_at' =>
-            'datetime',
-
-        'monthly_fee' =>
-            'decimal:2',
+        'medical_care_terms_acknowledged' => 'boolean',
+        'payment_fee_terms_acknowledged' => 'boolean',
+        'resident_conduct_terms_acknowledged' => 'boolean',
+        'belongings_terms_acknowledged' => 'boolean',
+        'termination_terms_acknowledged' => 'boolean',
+        'emergency_liability_terms_acknowledged' => 'boolean',
+        'risk_liability_terms_acknowledged' => 'boolean',
+        'death_event_terms_acknowledged' => 'boolean',
+        'agreement_acknowledged_at' => 'datetime',
+        'monthly_fee' => 'decimal:2',
     ];
 
     public function admission()
@@ -89,9 +68,7 @@ class ResidentAdmissionConsent extends Model
 
     public function resident()
     {
-        return $this->belongsTo(
-            Resident::class
-        );
+        return $this->belongsTo(Resident::class);
     }
 
     public function witness()
