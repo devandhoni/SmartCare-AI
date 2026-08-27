@@ -74,6 +74,9 @@ function ResidentProfile() {
     const [latestVital, setLatestVital] = useState(null);
     const [activeAlerts, setActiveAlerts] = useState([]);
     const [pendingTasks, setPendingTasks] = useState([]);
+    const [clinicalTimeline, setClinicalTimeline] = useState([]);
+    const [timelineLoading, setTimelineLoading] = useState(false);
+    const [timelineError, setTimelineError] = useState("");
 
     const [residentLoading, setResidentLoading] = useState(true);
     const [residentError, setResidentError] = useState("");
@@ -203,6 +206,42 @@ useEffect(() => {
     };
 
     loadVitals();
+}, [id]);
+
+
+useEffect(() => {
+    const loadClinicalTimeline = async () => {
+        try {
+            setTimelineLoading(true);
+            setTimelineError("");
+
+            const response = await api.get(
+                `/residents/${id}/timeline`
+            );
+
+            setClinicalTimeline(
+                Array.isArray(response.data?.timeline)
+                    ? response.data.timeline
+                    : []
+            );
+        } catch (error) {
+            console.error(
+                "Failed to load clinical timeline:",
+                error
+            );
+
+            setClinicalTimeline([]);
+
+            setTimelineError(
+                error.response?.data?.message ||
+                "Unable to load resident timeline."
+            );
+        } finally {
+            setTimelineLoading(false);
+        }
+    };
+
+    loadClinicalTimeline();
 }, [id]);
 
 const [vitalHistory, setVitalHistory] = useState({});
@@ -1672,40 +1711,176 @@ const getCareStatusLabel = (status) => {
 const residentDocuments = documentRecords;
 const residentFamilyContacts = familyContacts;
 
-const timelineEntries = [
-    ...residentVitalHistory.slice(0, 4).map((record) => ({
-        id: `vital-${record.id}`,
-        type: "Vitals",
-        title: `Vital signs recorded: BP ${record.bloodPressure}, SpO₂ ${record.spo2}%`,
-        time: record.recordedAt,
-        detail: record.notes || "Routine vital signs observation.",
-    })),
-    ...medicationHistory.slice(0, 6).map((entry, index) => ({
-        id: `medication-history-${index}`,
-        type: "Medication",
-        title: `${entry.medicine || "Medication"} administered`,
-        time: formatMedicationDateTime(entry.completed_time),
-        detail: `${entry.time_slot || "Medication"} round${
-            entry.completed_by ? ` • Recorded by ${entry.completed_by}` : ""
-        }`,
-    })),
-    ...careApiRecords.slice(0, 6).map((entry) => ({
-        id: `care-${entry.id}`,
-        type: "Care",
-        title: entry.title || "Care record",
-        time: formatCareDateTime(entry.recorded_at),
-        detail: `${entry.care_type || "Care"} • ${getCareStatusLabel(entry.care_status)}${
-            (entry.recorder?.full_name || entry.recorder?.name) ? ` • Recorded by ${entry.recorder?.full_name || entry.recorder?.name}` : ""
-        }${entry.notes ? ` • ${entry.notes}` : ""}`,
-    })),
-    {
-        id: "admission",
-        type: "Admission",
-        title: `${resident.name} admitted to SmartCare`,
-        time: resident.admissionDate,
-        detail: `${resident.room} • ${resident.primaryDiagnosis}`,
-    },
-];
+const formatTimelineDate = (value) => {
+    if (!value) {
+        return "-";
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleString("en-MY", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+};
+
+
+const getTimelineCategory = (entry) => {
+    const source =
+        String(entry?.source || "");
+
+    const title =
+        String(entry?.title || "");
+
+
+    if (
+        source.includes("ResidentVisitor")
+        ||
+        title.includes("Visitor")
+    ) {
+        return "Visitor";
+    }
+
+
+    if (
+        source.includes("ResidentHomeLeave")
+        ||
+        title.includes("Home Leave")
+    ) {
+        return "Home Leave";
+    }
+
+
+    if (
+        source.includes("ResidentParcel")
+        ||
+        title.includes("Parcel")
+    ) {
+        return "Parcel";
+    }
+
+
+    if (
+        source === "WeeklyVitalSign"
+        ||
+        title.includes("Weekly Vital")
+    ) {
+        return "Weekly Vitals";
+    }
+
+
+    if (
+        title.includes("Monthly Glucose")
+    ) {
+        return "Monthly Glucose";
+    }
+
+
+    if (
+        entry?.type === "ADMISSION"
+    ) {
+        return "Admission";
+    }
+
+
+    if (
+        entry?.type === "DISCHARGE"
+    ) {
+        return "Discharge";
+    }
+
+
+    if (
+        String(entry?.type || "")
+            .startsWith("MEDICATION")
+    ) {
+        return "Medication";
+    }
+
+
+    if (
+        String(entry?.type || "")
+            .startsWith("AI_")
+    ) {
+        return "AI";
+    }
+
+
+    if (
+        entry?.type === "VITAL"
+    ) {
+        return "Vitals";
+    }
+
+
+    return (
+        entry?.category ||
+        "Clinical"
+    );
+};
+
+
+const getTimelineBadgeStyle = (entry) => {
+    const category =
+        getTimelineCategory(entry);
+
+    if (
+        category === "Admission"
+        ||
+        category === "Discharge"
+    ) {
+        return "bg-purple-50 text-purple-700";
+    }
+
+    if (
+        category === "Vitals"
+        ||
+        category === "Weekly Vitals"
+        ||
+        category === "Monthly Glucose"
+    ) {
+        return "bg-blue-50 text-blue-700";
+    }
+
+    if (
+        category === "Medication"
+    ) {
+        return "bg-emerald-50 text-emerald-700";
+    }
+
+    if (
+        category === "Home Leave"
+    ) {
+        return "bg-amber-50 text-amber-700";
+    }
+
+    if (
+        category === "Visitor"
+    ) {
+        return "bg-cyan-50 text-cyan-700";
+    }
+
+    if (
+        category === "Parcel"
+    ) {
+        return "bg-orange-50 text-orange-700";
+    }
+
+    if (
+        category === "AI"
+    ) {
+        return "bg-rose-50 text-rose-700";
+    }
+
+    return "bg-slate-100 text-slate-600";
+};
 
 
 
@@ -4838,34 +5013,358 @@ const timelineEntries = [
 }
 
 {/* TIMELINE TAB */}
+
 {
     activeTab === "timeline" && (
+
         <div className="space-y-6">
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-xl font-bold text-slate-800">Resident Timeline</h2>
-                <p className="mt-1 text-sm text-slate-500">A simple chronological view of important care, vital, medication and admission events.</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="space-y-0">
-                    {timelineEntries.map((entry, index) => (
-                        <div key={entry.id} className="relative flex gap-4 pb-7 last:pb-0">
-                            {index !== timelineEntries.length - 1 && <div className="absolute left-[11px] top-7 h-[calc(100%-8px)] w-px bg-slate-200" />}
-                            <div className="mt-1 h-6 w-6 shrink-0 rounded-full border-4 border-white bg-blue-500 ring-1 ring-slate-200" />
-                            <div className="min-w-0 flex-1 rounded-xl bg-slate-50 p-4">
-                                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">{entry.type}</span>
-                                        <p className="font-semibold text-slate-800">{entry.title}</p>
-                                    </div>
-                                    <span className="text-xs text-slate-400">{entry.time}</span>
-                                </div>
-                                <p className="mt-2 text-sm leading-6 text-slate-600">{entry.detail}</p>
-                            </div>
-                        </div>
-                    ))}
+
+
+            <section className="
+                rounded-2xl
+                border
+                border-slate-200
+                bg-white
+                p-5
+                shadow-sm
+                sm:p-6
+            ">
+
+                <div className="
+                    flex
+                    flex-col
+                    gap-3
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                ">
+
+                    <div>
+
+                        <h2 className="
+                            text-xl
+                            font-bold
+                            text-slate-800
+                            sm:text-2xl
+                        ">
+                            Resident Timeline
+                        </h2>
+
+                        <p className="
+                            mt-1
+                            max-w-3xl
+                            text-sm
+                            leading-6
+                            text-slate-500
+                        ">
+                            Chronological clinical and operational history for {resident.name}.
+                        </p>
+
+                    </div>
+
+
+                    <span className="
+                        w-fit
+                        rounded-full
+                        bg-slate-100
+                        px-3
+                        py-1
+                        text-xs
+                        font-semibold
+                        text-slate-600
+                    ">
+                        {clinicalTimeline.length} event
+                        {clinicalTimeline.length === 1 ? "" : "s"}
+                    </span>
+
                 </div>
-            </div>
+
+            </section>
+
+
+            {timelineError && (
+
+                <div className="
+                    rounded-2xl
+                    border
+                    border-red-200
+                    bg-red-50
+                    px-5
+                    py-4
+                    text-sm
+                    font-medium
+                    text-red-700
+                ">
+                    {timelineError}
+                </div>
+
+            )}
+
+
+            {timelineLoading ? (
+
+                <div className="
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-white
+                    p-8
+                    text-center
+                    text-sm
+                    text-slate-500
+                    shadow-sm
+                ">
+                    Loading resident timeline...
+                </div>
+
+            ) : clinicalTimeline.length > 0 ? (
+
+                <section className="
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-white
+                    p-4
+                    shadow-sm
+                    sm:p-6
+                ">
+
+                    <div className="space-y-0">
+
+                        {clinicalTimeline.map(
+                            (entry, index) => (
+
+                                <div
+                                    key={`${entry.source || entry.type}-${entry.title}-${entry.date}-${index}`}
+                                    className="
+                                        relative
+                                        flex
+                                        gap-4
+                                        pb-7
+                                        last:pb-0
+                                    "
+                                >
+
+                                    {index !==
+                                        clinicalTimeline.length - 1 && (
+
+                                        <div className="
+                                            absolute
+                                            left-[11px]
+                                            top-7
+                                            h-[calc(100%-8px)]
+                                            w-px
+                                            bg-slate-200
+                                        " />
+
+                                    )}
+
+
+                                    <div className="
+                                        relative
+                                        z-[1]
+                                        mt-1
+                                        h-6
+                                        w-6
+                                        shrink-0
+                                        rounded-full
+                                        border-4
+                                        border-white
+                                        bg-blue-500
+                                        ring-1
+                                        ring-slate-200
+                                    " />
+
+
+                                    <article className="
+                                        min-w-0
+                                        flex-1
+                                        rounded-xl
+                                        border
+                                        border-slate-100
+                                        bg-slate-50
+                                        p-4
+                                        sm:p-5
+                                    ">
+
+                                        <div className="
+                                            flex
+                                            flex-col
+                                            gap-3
+                                            lg:flex-row
+                                            lg:items-start
+                                            lg:justify-between
+                                        ">
+
+                                            <div className="min-w-0">
+
+                                                <div className="
+                                                    flex
+                                                    flex-wrap
+                                                    items-center
+                                                    gap-2
+                                                ">
+
+                                                    <span
+                                                        className={`
+                                                            rounded-full
+                                                            px-2.5
+                                                            py-1
+                                                            text-xs
+                                                            font-semibold
+                                                            ${getTimelineBadgeStyle(entry)}
+                                                        `}
+                                                    >
+                                                        {getTimelineCategory(entry)}
+                                                    </span>
+
+
+                                                    {entry.severity && (
+
+                                                        <span className="
+                                                            rounded-full
+                                                            bg-rose-100
+                                                            px-2.5
+                                                            py-1
+                                                            text-xs
+                                                            font-semibold
+                                                            text-rose-700
+                                                        ">
+                                                            {entry.severity}
+                                                        </span>
+
+                                                    )}
+
+                                                </div>
+
+
+                                                <h3 className="
+                                                    mt-3
+                                                    break-words
+                                                    font-bold
+                                                    text-slate-800
+                                                    sm:text-lg
+                                                ">
+                                                    {entry.title || "Clinical Event"}
+                                                </h3>
+
+                                            </div>
+
+
+                                            <span className="
+                                                shrink-0
+                                                text-xs
+                                                text-slate-400
+                                            ">
+                                                {formatTimelineDate(
+                                                    entry.date
+                                                )}
+                                            </span>
+
+                                        </div>
+
+
+                                        {entry.clinical_summary && (
+
+                                            <p className="
+                                                mt-3
+                                                break-words
+                                                text-sm
+                                                leading-6
+                                                text-slate-600
+                                            ">
+                                                {entry.clinical_summary}
+                                            </p>
+
+                                        )}
+
+
+                                        <div className="
+                                            mt-4
+                                            flex
+                                            flex-wrap
+                                            gap-x-4
+                                            gap-y-2
+                                            border-t
+                                            border-slate-200
+                                            pt-3
+                                            text-xs
+                                            text-slate-400
+                                        ">
+
+                                            <span>
+                                                Event: {entry.type || "—"}
+                                            </span>
+
+                                            {entry.source && (
+
+                                                <span>
+                                                    Source: {entry.source}
+                                                </span>
+
+                                            )}
+
+                                        </div>
+
+                                    </article>
+
+                                </div>
+
+                            )
+                        )}
+
+                    </div>
+
+                </section>
+
+            ) : (
+
+                <section className="
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-white
+                    p-10
+                    text-center
+                    shadow-sm
+                ">
+
+                    <div className="
+                        mx-auto
+                        flex
+                        h-14
+                        w-14
+                        items-center
+                        justify-center
+                        rounded-full
+                        bg-blue-50
+                        text-2xl
+                    ">
+                        📋
+                    </div>
+
+                    <h3 className="
+                        mt-4
+                        font-bold
+                        text-slate-800
+                    ">
+                        No timeline events yet
+                    </h3>
+
+                    <p className="
+                        mt-2
+                        text-sm
+                        text-slate-500
+                    ">
+                        Clinical and operational events will appear here automatically.
+                    </p>
+
+                </section>
+
+            )}
+
         </div>
+
     )
 }
 
@@ -5116,17 +5615,59 @@ const timelineEntries = [
                 )}
             </section>
 
-            <section className="rounded-2xl border border-blue-100 bg-blue-50 p-5 sm:p-6">
-                <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">🧾</div>
-                    <div className="min-w-0">
-                        <h3 className="font-bold text-slate-800">Digital Forms Are the Next Layer</h3>
-                        <p className="mt-2 text-sm leading-6 text-slate-600">
-                            Uploaded files are now stored permanently against the resident. Admission, consent, discharge, monthly glucose, weekly vital-sign, home-leave, visitor and parcel forms can next be converted into structured SmartCare workflows instead of relying only on scans.
-                        </p>
-                    </div>
-                </div>
-            </section>
+            <section className="
+    rounded-2xl
+    border
+    border-emerald-100
+    bg-emerald-50
+    p-5
+    sm:p-6
+">
+
+    <div className="flex items-start gap-3">
+
+        <div className="
+            flex
+            h-10
+            w-10
+            shrink-0
+            items-center
+            justify-center
+            rounded-xl
+            bg-emerald-600
+            text-white
+        ">
+            ✓
+        </div>
+
+
+        <div className="min-w-0">
+
+            <h3 className="
+                font-bold
+                text-slate-800
+            ">
+                Structured Digital Workflows Active
+            </h3>
+
+            <p className="
+                mt-2
+                text-sm
+                leading-6
+                text-slate-600
+            ">
+                Admission, consent, discharge, monthly glucose,
+                weekly vital signs, home leave, visitor and parcel
+                workflows are now stored as structured SmartCare
+                records. Important workflow events are linked
+                automatically to the resident timeline.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
 
         </div>
     )
