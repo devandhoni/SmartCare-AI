@@ -56,6 +56,7 @@ use App\Http\Controllers\ResidentAdmissionDraftController;
 use App\Http\Controllers\ResidentDischargeController;
 use App\Http\Controllers\MonthlyGlucoseCheckController;
 use App\Http\Controllers\ResidentParcelController;
+use App\Http\Controllers\ResidentHomeLeaveController;
 
 /*
 |--------------------------------------------------------------------------
@@ -1509,6 +1510,48 @@ Route::middleware([
 Route::get(
     '/residents/{residentId}/vital-trends',
     [VitalTrendController::class,'index']
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| Resident Home Leave Controller
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/home-leaves',
+    [ResidentHomeLeaveController::class, 'index']
+);
+
+Route::post(
+    '/home-leaves',
+    [ResidentHomeLeaveController::class, 'store']
+);
+
+Route::get(
+    '/home-leaves/{id}',
+    [ResidentHomeLeaveController::class, 'show']
+);
+
+Route::put(
+    '/home-leaves/{id}',
+    [ResidentHomeLeaveController::class, 'update']
+);
+
+Route::delete(
+    '/home-leaves/{id}',
+    [ResidentHomeLeaveController::class, 'destroy']
+);
+
+Route::post(
+    '/home-leaves/{id}/return',
+    [ResidentHomeLeaveController::class, 'recordReturn']
+);
+
+Route::get(
+    '/residents/{id}/home-leaves',
+    [ResidentHomeLeaveController::class, 'residentLeaves']
 );
 
 

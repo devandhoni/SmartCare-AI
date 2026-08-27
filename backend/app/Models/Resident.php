@@ -228,6 +228,21 @@ class Resident extends Model
         }
 
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Home Leave
+    |--------------------------------------------------------------------------
+    */
+
+    public function homeLeaves()
+        {
+            return $this->hasMany(
+                ResidentHomeLeave::class,
+                'resident_id'
+            );
+        }
+
     /*
     |--------------------------------------------------------------------------
     | Latest Health Risk Score
