@@ -58,6 +58,7 @@ use App\Http\Controllers\MonthlyGlucoseCheckController;
 use App\Http\Controllers\ResidentParcelController;
 use App\Http\Controllers\ResidentHomeLeaveController;
 use App\Http\Controllers\ResidentVisitorController;
+use App\Http\Controllers\WeeklyVitalCheckController;
 
 
 
@@ -916,6 +917,33 @@ Route::put(
 
     ]
 
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| Weekly Vital Signs Checks
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/weekly-vital-checks',
+    [WeeklyVitalCheckController::class, 'index']
+);
+
+Route::get(
+    '/weekly-vital-checks/{id}',
+    [WeeklyVitalCheckController::class, 'show']
+);
+
+Route::get(
+    '/residents/{id}/weekly-vital-checks',
+    [WeeklyVitalCheckController::class, 'residentChecks']
+);
+
+Route::post(
+    '/residents/{id}/weekly-vital-checks',
+    [WeeklyVitalCheckController::class, 'store']
 );
 
 

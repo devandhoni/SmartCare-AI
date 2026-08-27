@@ -13,6 +13,7 @@ const menuSections = [
             { name: "Discharges", path: "/discharges", icon: "↗" },
             { name: "Inventory", path: "/inventory", icon: "📦" },
             { name: "Monthly Glucose", path: "/monthly-glucose", icon: "🩸" },
+            { name: "Weekly Vitals", path: "/weekly-vitals", icon: "📋" },
             { name: "Visitors", path: "/visitors", icon: "🚪" },
             { name: "Home Leave", path: "/home-leave", icon: "🏡" },
             { name: "Parcels", path: "/parcels", icon: "📬" },

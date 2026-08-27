@@ -24,7 +24,7 @@ import MonthlyGlucose from "./pages/MonthlyGlucose";
 import Visitors from "./pages/Visitors";
 import HomeLeave from "./pages/HomeLeave";
 import Parcels from "./pages/Parcels";
-
+import WeeklyVitals from "./pages/WeeklyVitals";
 import Reports from "./pages/Reports";
 import AIIntelligence from "./pages/AIIntelligence";
 
@@ -158,6 +158,17 @@ function App() {
                         </AdminLayout>
                     }
                 />
+
+
+                <Route
+                    path="/weekly-vitals"
+                    element={
+                        <AdminLayout>
+                            <WeeklyVitals />
+                        </AdminLayout>
+                    }
+                />
+
 
 
                 <Route
