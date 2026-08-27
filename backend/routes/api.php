@@ -53,6 +53,7 @@ use App\Http\Controllers\ResidentAdmissionController;
 use App\Http\Controllers\ResidentAdmissionConsentController;
 use App\Http\Controllers\MedicineInventoryController;
 use App\Http\Controllers\ResidentAdmissionDraftController;
+use App\Http\Controllers\ResidentDischargeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -406,6 +407,71 @@ Route::delete(
     [
         ResidentAdmissionDraftController::class,
         'destroy'
+    ]
+);
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Residents Discharge Controller
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get(
+    '/discharges',
+    [
+        ResidentDischargeController::class,
+        'index'
+    ]
+);
+
+Route::post(
+    '/discharges',
+    [
+        ResidentDischargeController::class,
+        'store'
+    ]
+);
+
+Route::get(
+    '/discharges/{id}',
+    [
+        ResidentDischargeController::class,
+        'show'
+    ]
+);
+
+Route::put(
+    '/discharges/{id}',
+    [
+        ResidentDischargeController::class,
+        'update'
+    ]
+);
+
+Route::delete(
+    '/discharges/{id}',
+    [
+        ResidentDischargeController::class,
+        'destroy'
+    ]
+);
+
+Route::post(
+    '/discharges/{id}/complete',
+    [
+        ResidentDischargeController::class,
+        'complete'
+    ]
+);
+
+Route::get(
+    '/residents/{id}/discharges',
+    [
+        ResidentDischargeController::class,
+        'residentDischarges'
     ]
 );
 
