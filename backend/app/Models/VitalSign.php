@@ -19,23 +19,17 @@ class VitalSign extends Model
     protected $fillable = [
 
         'resident_id',
-
         'blood_pressure_systolic',
-
         'blood_pressure_diastolic',
-
         'blood_glucose',
-
+        'glucose_measurement_type',
+        'glucose_notes',
+        'record_source',
         'heart_rate',
-
         'oxygen_level',
-
         'temperature',
-
         'weight',
-
         'recorded_by',
-
         'recorded_at'
 
     ];

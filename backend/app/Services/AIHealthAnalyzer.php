@@ -3,6 +3,7 @@
 namespace App\Services;
 
 
+use App\Enums\ClinicalEventType;
 use App\Models\AiAlert;
 use App\Models\Notification;
 

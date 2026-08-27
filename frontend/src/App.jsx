@@ -20,6 +20,7 @@ import CareRecords from "./pages/CareRecords";
 import Admissions from "./pages/Admissions";
 import Discharges from "./pages/Discharges";
 import Inventory from "./pages/Inventory";
+import MonthlyGlucose from "./pages/MonthlyGlucose";
 import Visitors from "./pages/Visitors";
 import HomeLeave from "./pages/HomeLeave";
 import Parcels from "./pages/Parcels";
@@ -143,6 +144,17 @@ function App() {
                     element={
                         <AdminLayout>
                             <Inventory />
+                        </AdminLayout>
+                    }
+                />
+
+
+
+                <Route
+                    path="/monthly-glucose"
+                    element={
+                        <AdminLayout>
+                            <MonthlyGlucose />
                         </AdminLayout>
                     }
                 />

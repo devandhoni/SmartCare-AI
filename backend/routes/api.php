@@ -54,6 +54,7 @@ use App\Http\Controllers\ResidentAdmissionConsentController;
 use App\Http\Controllers\MedicineInventoryController;
 use App\Http\Controllers\ResidentAdmissionDraftController;
 use App\Http\Controllers\ResidentDischargeController;
+use App\Http\Controllers\MonthlyGlucoseCheckController;
 
 /*
 |--------------------------------------------------------------------------
@@ -731,6 +732,34 @@ Route::get(
     ]
 );
 
+
+
+/*
+|--------------------------------------------------------------------------
+| Monthly Glucose Check Controller
+|--------------------------------------------------------------------------
+*/
+
+
+Route::get(
+    '/monthly-glucose-checks',
+    [MonthlyGlucoseCheckController::class, 'index']
+);
+
+Route::get(
+    '/monthly-glucose-checks/{id}',
+    [MonthlyGlucoseCheckController::class, 'show']
+);
+
+Route::get(
+    '/residents/{id}/monthly-glucose-checks',
+    [MonthlyGlucoseCheckController::class, 'residentChecks']
+);
+
+Route::post(
+    '/residents/{id}/monthly-glucose-checks',
+    [MonthlyGlucoseCheckController::class, 'store']
+);
 
 
 /*

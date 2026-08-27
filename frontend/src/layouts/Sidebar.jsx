@@ -12,6 +12,7 @@ const menuSections = [
             { name: "Admissions", path: "/admissions", icon: "➕" },
             { name: "Discharges", path: "/discharges", icon: "↗" },
             { name: "Inventory", path: "/inventory", icon: "📦" },
+            { name: "Monthly Glucose", path: "/monthly-glucose", icon: "🩸" },
             { name: "Visitors", path: "/visitors", icon: "🚪" },
             { name: "Home Leave", path: "/home-leave", icon: "🏡" },
             { name: "Parcels", path: "/parcels", icon: "📬" },
