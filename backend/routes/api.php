@@ -55,6 +55,7 @@ use App\Http\Controllers\MedicineInventoryController;
 use App\Http\Controllers\ResidentAdmissionDraftController;
 use App\Http\Controllers\ResidentDischargeController;
 use App\Http\Controllers\MonthlyGlucoseCheckController;
+use App\Http\Controllers\ResidentParcelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -81,7 +82,6 @@ Route::middleware('auth:sanctum')
         'logout'
     ]
 );
-
 
 
 /*
@@ -180,6 +180,60 @@ Route::middleware([
     'role:Administrator,Nurse'
 ])
 ->group(function(){
+
+
+/*
+|--------------------------------------------------------------------------
+| Resident Parcel Controller
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/parcels',
+    [ResidentParcelController::class, 'index']
+);
+
+Route::post(
+    '/parcels',
+    [ResidentParcelController::class, 'store']
+);
+
+Route::get(
+    '/parcels/{id}',
+    [ResidentParcelController::class, 'show']
+);
+
+Route::put(
+    '/parcels/{id}',
+    [ResidentParcelController::class, 'update']
+);
+
+Route::delete(
+    '/parcels/{id}',
+    [ResidentParcelController::class, 'destroy']
+);
+
+Route::post(
+    '/parcels/{id}/notify',
+    [ResidentParcelController::class, 'markNotified']
+);
+
+Route::post(
+    '/parcels/{id}/collect',
+    [ResidentParcelController::class, 'collect']
+);
+
+Route::get(
+    '/residents/{id}/parcels',
+    [ResidentParcelController::class, 'residentParcels']
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| Residents
+|--------------------------------------------------------------------------
+*/
 
 
 
