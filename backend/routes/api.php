@@ -57,6 +57,9 @@ use App\Http\Controllers\ResidentDischargeController;
 use App\Http\Controllers\MonthlyGlucoseCheckController;
 use App\Http\Controllers\ResidentParcelController;
 use App\Http\Controllers\ResidentHomeLeaveController;
+use App\Http\Controllers\ResidentVisitorController;
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -1552,6 +1555,49 @@ Route::post(
 Route::get(
     '/residents/{id}/home-leaves',
     [ResidentHomeLeaveController::class, 'residentLeaves']
+);
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Resident Visitor Controller
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/visitors',
+    [ResidentVisitorController::class, 'index']
+);
+
+Route::post(
+    '/visitors',
+    [ResidentVisitorController::class, 'store']
+);
+
+Route::get(
+    '/visitors/{id}',
+    [ResidentVisitorController::class, 'show']
+);
+
+Route::put(
+    '/visitors/{id}',
+    [ResidentVisitorController::class, 'update']
+);
+
+Route::delete(
+    '/visitors/{id}',
+    [ResidentVisitorController::class, 'destroy']
+);
+
+Route::post(
+    '/visitors/{id}/checkout',
+    [ResidentVisitorController::class, 'checkout']
+);
+
+Route::get(
+    '/residents/{id}/visitors',
+    [ResidentVisitorController::class, 'residentVisitors']
 );
 
 

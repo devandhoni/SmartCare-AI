@@ -243,6 +243,20 @@ class Resident extends Model
             );
         }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Visitors
+    |--------------------------------------------------------------------------
+    */
+    
+    public function visitors()
+        {
+            return $this->hasMany(
+                ResidentVisitor::class,
+                'resident_id'
+            );
+        }
     /*
     |--------------------------------------------------------------------------
     | Latest Health Risk Score
