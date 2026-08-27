@@ -45,6 +45,8 @@ function Discharges() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [viewingDischarge, setViewingDischarge] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -207,6 +209,32 @@ function Discharges() {
     } catch (e) { setError(apiError(e, "Unable to discard discharge draft.")); }
   }
 
+
+  async function viewCompletedDischarge(discharge) {
+    try {
+      setLoadingSummary(true);
+      setError("");
+
+      const response = await api.get(
+        `/discharges/${discharge.id}`
+      );
+
+      setViewingDischarge(
+        response.data?.discharge ??
+        response.data
+      );
+    } catch (e) {
+      setError(
+        apiError(
+          e,
+          "Unable to load discharge summary."
+        )
+      );
+    } finally {
+      setLoadingSummary(false);
+    }
+  }
+
   async function complete() {
     for (let n = 1; n <= 2; n++) {
       const msg = validate(n);
@@ -308,15 +336,359 @@ function Discharges() {
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <Header title="Completed Discharges" subtitle="Completed resident discharge summaries." count={completed.length} />
-        {completed.length === 0 ? <Empty text="No completed discharges yet." /> : completed.slice(0, 10).map(d => (
-          <Row key={d.id} title={d.resident?.full_name || "Resident"} subtitle={`${d.discharge_number} · ${formatDateTime(d.discharged_at)}`}>
-            {d.resident?.id && <button onClick={() => navigate(`/residents/${d.resident.id}`)} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Open Resident</button>}
-          </Row>
-        ))}
+                  {completed.length === 0 ? (
+            <Empty text="No completed discharges yet." />
+          ) : (
+            completed.slice(0, 10).map((d) => (
+              <Row
+                key={d.id}
+                title={d.resident?.full_name || "Resident"}
+                subtitle={`${d.discharge_number} · ${formatDateTime(d.discharged_at)}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => viewCompletedDischarge(d)}
+                  disabled={loadingSummary}
+                  className="rounded-lg border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                >
+                  View Summary
+                </button>
+
+                {d.resident?.id && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate(`/residents/${d.resident.id}`)
+                    }
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Open Resident
+                  </button>
+                )}
+              </Row>
+            ))
+          )}
       </section>
+      {viewingDischarge && (
+        <DischargeSummaryModal
+          discharge={viewingDischarge}
+          onClose={() =>
+            setViewingDischarge(null)
+          }
+        />
+      )}
     </div>
   );
 }
+
+
+function DischargeSummaryModal({
+  discharge,
+  onClose,
+}) {
+  const resident =
+    discharge?.resident || {};
+
+  return (
+    <div
+      id="discharge-summary-overlay"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+    >
+      <div
+        id="discharge-summary-print"
+        className="max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+      >
+
+        <div className="sticky top-0 z-10 flex flex-col gap-4 border-b border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">
+              SmartCare-AI
+            </p>
+
+            <h2 className="mt-1 text-2xl font-bold text-slate-800">
+              Resident Discharge Summary
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {discharge.discharge_number}
+            </p>
+          </div>
+
+          <div className="print-hidden flex gap-2">
+
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+            >
+              Print Summary
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Close
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <div className="space-y-6 p-5 sm:p-7">
+
+
+          {/* Resident */}
+
+          <SummarySection title="Resident Information">
+
+            <SummaryGrid>
+
+              <SummaryItem
+                label="Resident Name"
+                value={resident.full_name}
+              />
+
+              <SummaryItem
+                label="IC / Passport"
+                value={resident.ic_number}
+              />
+
+              <SummaryItem
+                label="Admission Date"
+                value={formatDate(
+                  resident.admission_date
+                )}
+              />
+
+              <SummaryItem
+                label="Discharge Date"
+                value={formatDateTime(
+                  discharge.discharged_at
+                )}
+              />
+
+              <SummaryItem
+                label="Discharge Reference"
+                value={discharge.discharge_number}
+              />
+
+              <SummaryItem
+                label="Status"
+                value={discharge.status}
+              />
+
+            </SummaryGrid>
+
+          </SummarySection>
+
+
+          {/* Discharge */}
+
+          <SummarySection title="Discharge Details">
+
+            <SummaryGrid>
+
+              <SummaryItem
+                label="Discharge Type"
+                value={pretty(
+                  discharge.discharge_type
+                )}
+              />
+
+              <SummaryItem
+                label="Destination"
+                value={discharge.discharge_destination}
+              />
+
+              <SummaryItem
+                label="Condition at Discharge"
+                value={discharge.condition_at_discharge}
+              />
+
+              <SummaryItem
+                label="Discharged To"
+                value={discharge.discharged_to}
+              />
+
+              <SummaryItem
+                label="Relationship"
+                value={discharge.discharged_to_relationship}
+              />
+
+              <SummaryItem
+                label="Contact"
+                value={discharge.discharged_to_contact}
+              />
+
+            </SummaryGrid>
+
+
+            <SummaryText
+              label="Reason for Discharge"
+              value={discharge.reason_for_discharge}
+            />
+
+          </SummarySection>
+
+
+          {/* Clinical */}
+
+          <SummarySection title="Clinical & Care Summary">
+
+            <SummaryText
+              label="Treatment / Care Summary"
+              value={discharge.treatment_care_summary}
+            />
+
+            <SummaryText
+              label="Medical Summary"
+              value={discharge.medical_summary}
+            />
+
+            <SummaryText
+              label="Follow-Up Instructions"
+              value={discharge.follow_up_instructions}
+            />
+
+          </SummarySection>
+
+
+          {/* Medication */}
+
+          <SummarySection title="Medication Handover">
+
+            <SummaryText
+              label="Medication Summary"
+              value={discharge.medication_summary}
+            />
+
+            <SummaryText
+              label="Medication Instructions"
+              value={discharge.medication_instructions}
+            />
+
+          </SummarySection>
+
+
+          {/* Belongings */}
+
+          <SummarySection title="Belongings & Administration">
+
+            <SummaryGrid>
+
+              <SummaryItem
+                label="Belongings Returned"
+                value={
+                  discharge.belongings_returned
+                    ? "Yes"
+                    : "No"
+                }
+              />
+
+              <SummaryItem
+                label="Completed At"
+                value={formatDateTime(
+                  discharge.completed_at
+                )}
+              />
+
+            </SummaryGrid>
+
+            <SummaryText
+              label="Belongings Notes"
+              value={discharge.belongings_notes}
+            />
+
+            <SummaryText
+              label="Administrative Notes"
+              value={discharge.administrative_notes}
+            />
+
+          </SummarySection>
+
+
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
+            This discharge summary is generated from the structured SmartCare-AI discharge record.
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+
+function SummarySection({
+  title,
+  children,
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200 p-5">
+      <h3 className="text-lg font-bold text-slate-800">
+        {title}
+      </h3>
+
+      <div className="mt-4 space-y-4">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+
+function SummaryGrid({
+  children,
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {children}
+    </div>
+  );
+}
+
+
+function SummaryItem({
+  label,
+  value,
+}) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-1 break-words font-medium text-slate-700">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
+
+function SummaryText({
+  label,
+  value,
+}) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+
+      <p className="mt-2 whitespace-pre-line rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+        {value || "—"}
+      </p>
+    </div>
+  );
+}
+
 
 function ResidentStep({ residents, rooms, selected, value, onSelect }) {
   return <StepCard title="Select Resident" desc="Choose an active resident. Saving a draft will not discharge them.">

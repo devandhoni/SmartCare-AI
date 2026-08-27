@@ -75,3 +75,71 @@ svg {
 table {
     border-collapse: collapse;
 }
+
+/* =========================================================
+   SmartCare-AI - Discharge Summary Printing
+   ========================================================= */
+
+@media print {
+
+    @page {
+        size: A4 portrait;
+        margin: 14mm;
+    }
+
+    html,
+    body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body * {
+        visibility: hidden !important;
+    }
+
+    #discharge-summary-overlay,
+    #discharge-summary-overlay * {
+        visibility: visible !important;
+    }
+
+    #discharge-summary-overlay {
+        position: absolute !important;
+        inset: 0 !important;
+        display: block !important;
+        background: #ffffff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    #discharge-summary-print {
+        position: static !important;
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #ffffff !important;
+    }
+
+    #discharge-summary-print .sticky {
+        position: static !important;
+    }
+
+    .print-hidden {
+        display: none !important;
+    }
+
+    #discharge-summary-print section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    #discharge-summary-print h1,
+    #discharge-summary-print h2,
+    #discharge-summary-print h3 {
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+}
