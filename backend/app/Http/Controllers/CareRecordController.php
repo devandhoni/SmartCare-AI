@@ -19,7 +19,7 @@ class CareRecordController extends Controller
         $resident = Resident::findOrFail($residentId);
 
         $records = CareRecord::with([
-                'recorder:id,name',
+                'recorder:id,full_name',
             ])
             ->where('resident_id', $resident->id)
             ->orderByDesc('recorded_at')
@@ -48,6 +48,12 @@ class CareRecordController extends Controller
         $residentId
     ) {
         $resident = Resident::findOrFail($residentId);
+
+        if ($resident->status !== 'Active') {
+            return response()->json([
+                'message' => 'Care records can only be added for active residents.',
+            ], 422);
+        }
 
         $validated = $request->validate([
             'care_type' => 'required|string|max:100',
@@ -85,7 +91,7 @@ class CareRecordController extends Controller
         ]);
 
         $record->load(
-            'recorder:id,name'
+            'recorder:id,full_name'
         );
 
         return response()->json([
@@ -108,7 +114,7 @@ class CareRecordController extends Controller
     {
         $record = CareRecord::with([
                 'resident:id,full_name',
-                'recorder:id,name',
+                'recorder:id,full_name',
             ])
             ->findOrFail($id);
 
@@ -153,7 +159,7 @@ class CareRecordController extends Controller
         );
 
         $record->load(
-            'recorder:id,name'
+            'recorder:id,full_name'
         );
 
         return response()->json([

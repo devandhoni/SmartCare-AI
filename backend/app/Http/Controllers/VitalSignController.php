@@ -37,6 +37,12 @@ class VitalSignController extends Controller
     )
     {
 
+        if ($resident->status !== 'Active') {
+            return response()->json([
+                'message' => 'Vital signs can only be recorded for active residents.',
+            ], 422);
+        }
+
 
         /*
         |--------------------------------------------------------------------------

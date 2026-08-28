@@ -229,7 +229,15 @@ class MedicationAdministrationController extends Controller
                 ->findOrFail($id);
 
 
+            $resident = Resident::findOrFail(
+                $residentMedication->resident_id
+            );
 
+            if ($resident->status !== 'Active') {
+                throw new \Exception(
+                    'Medication can only be administered to active residents.'
+                );
+            }
 
 
 
@@ -621,6 +629,13 @@ class MedicationAdministrationController extends Controller
     )
     {
 
+        $resident = Resident::findOrFail($id);
+
+        if ($resident->status !== 'Active') {
+            return response()->json([
+                'message' => 'Medication can only be assigned to active residents.',
+            ], 422);
+        }
 
         $request->validate([
 
@@ -831,7 +846,7 @@ public function history($id)
 
                 $record->completedBy
                 ?
-                $record->completedBy->name
+                $record->completedBy->full_name
                 :
                 null,
 
