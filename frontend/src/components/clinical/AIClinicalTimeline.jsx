@@ -102,10 +102,6 @@ const AIClinicalTimeline = ({
 
 
 
-            console.log(
-                "AI Clinical Timeline:",
-                response.data
-            );
 
 
 

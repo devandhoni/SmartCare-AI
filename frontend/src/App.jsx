@@ -9,6 +9,7 @@ from "react-router-dom";
 import Login from "./pages/Login";
 
 import AdminLayout from "./layouts/AdminLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Today from "./pages/Today";
 import Residents from "./pages/Residents";
@@ -33,8 +34,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ClinicalDashboard from "./components/clinical/ClinicalDashboard";
 
 
-function ClinicalDashboardWrapper() {
+const OPERATIONAL_ROLES = [
+    "Administrator",
+    "Nurse",
+];
 
+const ADMIN_ROLES = [
+    "Administrator",
+];
+
+
+function ClinicalDashboardWrapper() {
     const { id } = useParams();
 
     return (
@@ -45,207 +55,205 @@ function ClinicalDashboardWrapper() {
 }
 
 
-function App() {
-
+function OperationalPage({ children }) {
     return (
+        <ProtectedRoute
+            allowedRoles={OPERATIONAL_ROLES}
+        >
+            <AdminLayout>
+                {children}
+            </AdminLayout>
+        </ProtectedRoute>
+    );
+}
 
+
+function AdministratorPage({ children }) {
+    return (
+        <ProtectedRoute
+            allowedRoles={ADMIN_ROLES}
+        >
+            <AdminLayout>
+                {children}
+            </AdminLayout>
+        </ProtectedRoute>
+    );
+}
+
+
+function App() {
+    return (
         <BrowserRouter>
-
             <Routes>
-
                 <Route
                     path="/"
                     element={<Login />}
                 />
 
-
                 <Route
                     path="/today"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Today />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/residents"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Residents />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/residents/:id"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <ResidentProfile />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/medication"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Medication />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/tasks"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <NurseDashboard />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/care-records"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <CareRecords />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/admissions"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Admissions />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/discharges"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Discharges />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/inventory"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Inventory />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
-
 
                 <Route
                     path="/monthly-glucose"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <MonthlyGlucose />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/weekly-vitals"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <WeeklyVitals />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
-
 
                 <Route
                     path="/visitors"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Visitors />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/home-leave"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <HomeLeave />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/parcels"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <Parcels />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
-
-                <Route
-                    path="/reports"
-                    element={
-                        <AdminLayout>
-                            <Reports />
-                        </AdminLayout>
-                    }
-                />
-
 
                 <Route
                     path="/ai-intelligence"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <AIIntelligence />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
-
-
-                <Route
-                    path="/admin/dashboard"
-                    element={
-                        <AdminLayout>
-                            <AdminDashboard />
-                        </AdminLayout>
-                    }
-                />
-
 
                 <Route
                     path="/residents/:id/clinical-dashboard"
                     element={
-                        <AdminLayout>
+                        <OperationalPage>
                             <ClinicalDashboardWrapper />
-                        </AdminLayout>
+                        </OperationalPage>
                     }
                 />
 
+                <Route
+                    path="/reports"
+                    element={
+                        <AdministratorPage>
+                            <Reports />
+                        </AdministratorPage>
+                    }
+                />
+
+                <Route
+                    path="/admin/dashboard"
+                    element={
+                        <AdministratorPage>
+                            <AdminDashboard />
+                        </AdministratorPage>
+                    }
+                />
             </Routes>
-
         </BrowserRouter>
-
     );
-
 }
 
 export default App;

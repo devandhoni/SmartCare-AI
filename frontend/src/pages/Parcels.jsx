@@ -1459,109 +1459,112 @@ function PendingParcelCard({
 
 function CollectedParcelTable({ parcels }) {
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                    <tr>
-                        <TableHeader>
-                            Resident
-                        </TableHeader>
+        <>
+            <div className="divide-y divide-slate-100 lg:hidden">
+                {parcels.map((parcel) => (
+                    <div key={parcel.id} className="p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-slate-800">
+                                    {parcel.resident?.full_name || "Resident"}
+                                </h3>
+                                <p className="mt-1 break-all text-sm font-semibold text-blue-600">
+                                    {parcel.parcel_reference}
+                                </p>
+                            </div>
 
-                        <TableHeader>
-                            Parcel
-                        </TableHeader>
+                            <StatusBadge status={parcel.status} />
+                        </div>
 
-                        <TableHeader>
-                            Received
-                        </TableHeader>
+                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                            <Info
+                                label="Received"
+                                value={formatDateTime(parcel.received_at)}
+                            />
+                            <Info
+                                label="Collected"
+                                value={formatDateTime(parcel.collected_at)}
+                            />
+                            <Info
+                                label="Collected By"
+                                value={parcel.collected_by_name || "—"}
+                            />
+                            <Info
+                                label="Courier / Sender"
+                                value={parcel.courier_name || parcel.sender_name || "—"}
+                            />
+                        </div>
 
-                        <TableHeader>
-                            Collected
-                        </TableHeader>
+                        {parcel.collected_by_relationship && (
+                            <p className="mt-3 text-sm text-slate-500">
+                                Relationship: {parcel.collected_by_relationship}
+                            </p>
+                        )}
+                    </div>
+                ))}
+            </div>
 
-                        <TableHeader>
-                            Collected By
-                        </TableHeader>
-
-                        <TableHeader>
-                            Status
-                        </TableHeader>
-                    </tr>
-                </thead>
-
-                <tbody className="divide-y divide-slate-100 bg-white">
-                    {parcels.map((parcel) => (
-                        <tr
-                            key={parcel.id}
-                            className="hover:bg-slate-50"
-                        >
-                            <TableCell>
-                                <span className="font-semibold text-slate-800">
-                                    {parcel.resident
-                                        ?.full_name ||
-                                        "Resident"}
-                                </span>
-                            </TableCell>
-
-                            <TableCell>
-                                <div>
-                                    <p className="font-semibold text-blue-600">
-                                        {
-                                            parcel.parcel_reference
-                                        }
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-slate-500">
-                                        {parcel.courier_name ||
-                                            parcel.sender_name ||
-                                            "—"}
-                                    </p>
-                                </div>
-                            </TableCell>
-
-                            <TableCell>
-                                {formatDateTime(
-                                    parcel.received_at
-                                )}
-                            </TableCell>
-
-                            <TableCell>
-                                {formatDateTime(
-                                    parcel.collected_at
-                                )}
-                            </TableCell>
-
-                            <TableCell>
-                                <div>
-                                    <p className="font-medium text-slate-700">
-                                        {parcel.collected_by_name ||
-                                            "—"}
-                                    </p>
-
-                                    {parcel.collected_by_relationship && (
-                                        <p className="text-xs text-slate-500">
-                                            {
-                                                parcel.collected_by_relationship
-                                            }
-                                        </p>
-                                    )}
-                                </div>
-                            </TableCell>
-
-                            <TableCell>
-                                <StatusBadge
-                                    status={
-                                        parcel.status
-                                    }
-                                />
-                            </TableCell>
+            <div className="hidden overflow-x-auto lg:block">
+                <table className="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead className="bg-slate-50">
+                        <tr>
+                            <TableHeader>Resident</TableHeader>
+                            <TableHeader>Parcel</TableHeader>
+                            <TableHeader>Received</TableHeader>
+                            <TableHeader>Collected</TableHeader>
+                            <TableHeader>Collected By</TableHeader>
+                            <TableHeader>Status</TableHeader>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                        {parcels.map((parcel) => (
+                            <tr key={parcel.id} className="hover:bg-slate-50">
+                                <TableCell>
+                                    <span className="font-semibold text-slate-800">
+                                        {parcel.resident?.full_name || "Resident"}
+                                    </span>
+                                </TableCell>
+
+                                <TableCell>
+                                    <div>
+                                        <p className="font-semibold text-blue-600">
+                                            {parcel.parcel_reference}
+                                        </p>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            {parcel.courier_name || parcel.sender_name || "—"}
+                                        </p>
+                                    </div>
+                                </TableCell>
+
+                                <TableCell>{formatDateTime(parcel.received_at)}</TableCell>
+                                <TableCell>{formatDateTime(parcel.collected_at)}</TableCell>
+
+                                <TableCell>
+                                    <div>
+                                        <p className="font-medium text-slate-700">
+                                            {parcel.collected_by_name || "—"}
+                                        </p>
+                                        {parcel.collected_by_relationship && (
+                                            <p className="text-xs text-slate-500">
+                                                {parcel.collected_by_relationship}
+                                            </p>
+                                        )}
+                                    </div>
+                                </TableCell>
+
+                                <TableCell>
+                                    <StatusBadge status={parcel.status} />
+                                </TableCell>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }
+
 
 function Info({ label, value }) {
     return (

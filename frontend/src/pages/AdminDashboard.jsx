@@ -33,6 +33,8 @@ function AdminDashboard() {
 
     const [refreshing,setRefreshing] = useState(false);
 
+    const [error,setError] = useState("");
+
 
 
 
@@ -58,21 +60,13 @@ function AdminDashboard() {
 
             setRefreshing(true);
 
+            setError("");
+
 
 
             const data =
                 await getAICommandCenter();
-
-
-
-            console.log(
-                "ADMIN COMMAND CENTER FULL:",
-                JSON.stringify(data,null,2)
-            );
-
-
-
-            setDashboard(
+setDashboard(
                 data.data
             );
 
@@ -84,17 +78,7 @@ function AdminDashboard() {
 
             const alertResponse =
                 await getAIAlerts();
-
-
-
-            console.log(
-                "ADMIN AI ALERT DATA:",
-                JSON.stringify(alertResponse,null,2)
-            );
-
-
-
-            setAlerts(
+setAlerts(
                 alertResponse?.data?.alerts ?? []
             );
 
@@ -136,6 +120,14 @@ function AdminDashboard() {
                 error
             );
 
+            setError(
+                error?.response?.data?.message
+                ??
+                error?.message
+                ??
+                "Unable to load the management dashboard. Please try again."
+            );
+
 
         }
 
@@ -159,7 +151,7 @@ function AdminDashboard() {
 
 
 
-    if(!dashboard)
+    if(!dashboard && !error)
     {
 
 
@@ -197,6 +189,23 @@ function AdminDashboard() {
 
 
 
+
+
+
+    if(!dashboard && error)
+    {
+        return (
+            <div className="flex min-h-[50vh] items-center justify-center px-4">
+                <div className="w-full max-w-xl rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+                    <h2 className="text-lg font-bold text-red-800">Unable to load dashboard</h2>
+                    <p className="mt-2 text-sm text-red-700">{error}</p>
+                    <button type="button" onClick={loadDashboard} className="mt-4 rounded-lg bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700">
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
 
 

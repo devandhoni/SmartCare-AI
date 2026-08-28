@@ -47,7 +47,7 @@ function Login() {
         }
         else if(role === "Nurse")
         {
-            navigate("/nurse/dashboard");
+            navigate("/today");
         }
         else
         {

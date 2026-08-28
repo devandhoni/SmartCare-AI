@@ -811,7 +811,60 @@ function WeeklyVitals() {
 
                 ) : (
 
-                    <div className="overflow-x-auto">
+                    <>
+                        <div className="divide-y divide-slate-100 lg:hidden">
+                            {currentWeekChecks.map((check) => (
+                                <div key={check.id} className="p-5">
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h3 className="font-bold text-slate-800">
+                                                {check.resident?.full_name || `Resident #${check.resident_id}`}
+                                            </h3>
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                {formatDateTime(check.recorded_at)}
+                                            </p>
+                                        </div>
+
+                                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                                            COMPLETED
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                                        <VitalInfo
+                                            label="Blood Pressure"
+                                            value={`${check.blood_pressure_systolic}/${check.blood_pressure_diastolic}`}
+                                        />
+                                        <VitalInfo
+                                            label="Pulse"
+                                            value={`${check.heart_rate} bpm`}
+                                        />
+                                        <VitalInfo
+                                            label="SpO₂"
+                                            value={`${check.oxygen_level}%`}
+                                        />
+                                        <VitalInfo
+                                            label="Temperature"
+                                            value={`${check.temperature} °C`}
+                                        />
+                                        <VitalInfo
+                                            label="Weight"
+                                            value={`${check.weight} kg`}
+                                        />
+                                        <VitalInfo
+                                            label="Glucose"
+                                            value={
+                                                check.blood_glucose
+                                                    ? `${check.blood_glucose} mmol/L`
+                                                    : "—"
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="hidden overflow-x-auto lg:block">
 
                         <table className="min-w-full divide-y divide-slate-200 text-sm">
 
@@ -917,7 +970,8 @@ function WeeklyVitals() {
 
                         </table>
 
-                    </div>
+                        </div>
+                    </>
 
                 )}
 
@@ -1380,6 +1434,23 @@ function SummaryCard({
                 {description}
             </p>
 
+        </div>
+    );
+}
+
+
+function VitalInfo({
+    label,
+    value,
+}) {
+    return (
+        <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {label}
+            </p>
+            <p className="mt-1 font-bold text-slate-800">
+                {value ?? "—"}
+            </p>
         </div>
     );
 }

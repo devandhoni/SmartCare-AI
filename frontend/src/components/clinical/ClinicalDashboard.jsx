@@ -42,21 +42,9 @@ function ClinicalDashboard({ residentId }) {
             const result = await getClinicalDashboard(residentId);
 
 
-            console.log(
-                "Clinical Dashboard API Result:",
-                result
-            );
 
 
-            console.log(
-                "Active Alerts FULL:",
-                JSON.stringify(result.active_alerts, null, 2)
-            );
 
-            console.log(
-                "Health Trend:",
-                JSON.stringify(result.health_trend, null, 2)
-            );
 
             setData(result);
 

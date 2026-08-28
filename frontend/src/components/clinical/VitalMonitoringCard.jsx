@@ -217,10 +217,6 @@ export default function VitalMonitoringCard({
 
 
 
-            console.log(
-                "Vital Trend Result:",
-                result
-            );
 
 
 
@@ -1846,7 +1842,6 @@ export default function VitalMonitoringCard({
 
 
 }
-
 
 
 

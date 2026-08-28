@@ -29,7 +29,8 @@ function NurseDashboard() {
     const [loading,setLoading] =
         useState(true);
 
-
+    const [error,setError] =
+        useState("");
 
     const [lastUpdated,setLastUpdated] =
         useState(null);
@@ -60,22 +61,13 @@ function NurseDashboard() {
 
             setLoading(true);
 
+            setError("");
+
 
 
             const response =
                 await getNurseTasks();
-
-
-
-            console.log(
-                "NURSE TASK DATA:",
-                response
-            );
-
-
-
-
-            /*
+/*
                 API response expected:
 
                 {
@@ -88,16 +80,21 @@ function NurseDashboard() {
             */
 
 
-            setTasks(
-
-                response.tasks
+            const taskData =
+                response?.tasks
                 ??
-                response.data
+                response?.data
                 ??
                 response
                 ??
-                []
+                [];
 
+            setTasks(
+                Array.isArray(taskData)
+                ?
+                taskData
+                :
+                []
             );
 
 
@@ -111,6 +108,8 @@ function NurseDashboard() {
 
         }
 
+    
+
         catch(error){
 
 
@@ -118,6 +117,17 @@ function NurseDashboard() {
 
                 "Nurse dashboard loading error:",
                 error
+
+            );
+
+
+            setError(
+
+                error?.response?.data?.message
+                ??
+                error?.message
+                ??
+                "Unable to load nurse tasks. Please try again."
 
             );
 
@@ -178,9 +188,76 @@ function NurseDashboard() {
 
 
 
+    if(error)
+        {
 
+            return (
 
+                <div className="
+                flex
+                min-h-[50vh]
+                items-center
+                justify-center
+                px-4
+                ">
 
+                    <div className="
+                    w-full
+                    max-w-xl
+                    rounded-xl
+                    border
+                    border-red-200
+                    bg-red-50
+                    p-6
+                    text-center
+                    ">
+
+                        <h2 className="
+                        text-lg
+                        font-bold
+                        text-red-800
+                        ">
+
+                            Unable to load nurse tasks
+
+                        </h2>
+
+                        <p className="
+                        mt-2
+                        text-sm
+                        text-red-700
+                        ">
+
+                            {error}
+
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={loadTasks}
+                            className="
+                            mt-4
+                            rounded-lg
+                            bg-red-600
+                            px-5
+                            py-2
+                            font-semibold
+                            text-white
+                            hover:bg-red-700
+                            "
+                        >
+
+                            Try Again
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            );
+
+        }
 
 
 

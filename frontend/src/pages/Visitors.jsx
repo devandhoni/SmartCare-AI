@@ -1775,161 +1775,171 @@ function VisitorHistoryTable({
 
     return (
 
-        <div className="overflow-x-auto">
+        <>
+            <div className="divide-y divide-slate-100 lg:hidden">
+                {visitors.map((visitor) => (
+                    <div key={visitor.id} className="p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-slate-800">
+                                    {visitor.visitor_name}
+                                </h3>
 
-            <table className="min-w-full divide-y divide-slate-200">
+                                <p className="mt-1 text-sm text-slate-500">
+                                    {visitor.relationship || "Relationship not recorded"}
+                                </p>
+                            </div>
 
-                <thead className="bg-slate-50">
+                            <span className="max-w-full break-all rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                {visitor.visit_reference}
+                            </span>
+                        </div>
 
-                    <tr>
+                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                            <Info
+                                label="Resident"
+                                value={visitor.resident?.full_name ?? "Resident"}
+                            />
 
-                        <TableHead>
-                            Visitor
-                        </TableHead>
+                            <Info
+                                label="Staff"
+                                value={
+                                    visitor.checkedOutBy?.full_name ??
+                                    visitor.checkedInBy?.full_name ??
+                                    "—"
+                                }
+                            />
 
-                        <TableHead>
-                            Resident
-                        </TableHead>
+                            <Info
+                                label="Check-In"
+                                value={formatDateTime(visitor.checked_in_at)}
+                            />
 
-                        <TableHead>
-                            Reference
-                        </TableHead>
+                            <Info
+                                label="Check-Out"
+                                value={formatDateTime(visitor.checked_out_at)}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
 
-                        <TableHead>
-                            Check-In
-                        </TableHead>
+            <div className="hidden overflow-x-auto lg:block">
 
-                        <TableHead>
-                            Check-Out
-                        </TableHead>
+                <table className="min-w-full divide-y divide-slate-200">
 
-                        <TableHead>
-                            Staff
-                        </TableHead>
+                    <thead className="bg-slate-50">
 
-                    </tr>
+                        <tr>
 
-                </thead>
+                            <TableHead>
+                                Visitor
+                            </TableHead>
 
+                            <TableHead>
+                                Resident
+                            </TableHead>
 
-                <tbody className="divide-y divide-slate-100 bg-white">
+                            <TableHead>
+                                Reference
+                            </TableHead>
 
-                    {
-                        visitors.map(
-                            (visitor) => (
+                            <TableHead>
+                                Check-In
+                            </TableHead>
 
-                                <tr
+                            <TableHead>
+                                Check-Out
+                            </TableHead>
 
-                                    key={
-                                        visitor.id
-                                    }
+                            <TableHead>
+                                Staff
+                            </TableHead>
 
-                                    className="hover:bg-slate-50"
+                        </tr>
 
-                                >
-
-                                    <TableCell>
-
-                                        <div className="font-semibold text-slate-800">
-
-                                            {
-                                                visitor.visitor_name
-                                            }
-
-                                        </div>
-
-
-                                        <div className="mt-1 text-xs text-slate-500">
-
-                                            {
-                                                visitor.relationship
-                                                || "Relationship not recorded"
-                                            }
-
-                                        </div>
-
-                                    </TableCell>
-
-
-                                    <TableCell>
-
-                                        {
-                                            visitor.resident
-                                                ?.full_name
-                                            ?? "Resident"
-                                        }
-
-                                    </TableCell>
-
-
-                                    <TableCell>
-
-                                        <span className="font-medium text-blue-600">
-
-                                            {
-                                                visitor.visit_reference
-                                            }
-
-                                        </span>
-
-                                    </TableCell>
+                    </thead>
 
 
-                                    <TableCell>
+                    <tbody className="divide-y divide-slate-100 bg-white">
 
-                                        {
-                                            formatDateTime(
-                                                visitor.checked_in_at
-                                            )
-                                        }
+                        {
+                            visitors.map(
+                                (visitor) => (
 
-                                    </TableCell>
+                                    <tr
+                                        key={visitor.id}
+                                        className="hover:bg-slate-50"
+                                    >
+
+                                        <TableCell>
+
+                                            <div className="font-semibold text-slate-800">
+                                                {visitor.visitor_name}
+                                            </div>
+
+                                            <div className="mt-1 text-xs text-slate-500">
+                                                {visitor.relationship || "Relationship not recorded"}
+                                            </div>
+
+                                        </TableCell>
 
 
-                                    <TableCell>
-
-                                        {
-                                            formatDateTime(
-                                                visitor.checked_out_at
-                                            )
-                                        }
-
-                                    </TableCell>
+                                        <TableCell>
+                                            {visitor.resident?.full_name ?? "Resident"}
+                                        </TableCell>
 
 
-                                    <TableCell>
+                                        <TableCell>
 
-                                        <div>
+                                            <span className="font-medium text-blue-600">
+                                                {visitor.visit_reference}
+                                            </span>
 
-                                            {
-                                                visitor.checkedOutBy
-                                                    ?.full_name
-                                                ??
-                                                visitor.checkedInBy
-                                                    ?.full_name
-                                                ??
-                                                "—"
-                                            }
+                                        </TableCell>
 
-                                        </div>
 
-                                    </TableCell>
+                                        <TableCell>
+                                            {formatDateTime(visitor.checked_in_at)}
+                                        </TableCell>
 
-                                </tr>
 
+                                        <TableCell>
+                                            {formatDateTime(visitor.checked_out_at)}
+                                        </TableCell>
+
+
+                                        <TableCell>
+
+                                            <div>
+                                                {
+                                                    visitor.checkedOutBy?.full_name
+                                                    ??
+                                                    visitor.checkedInBy?.full_name
+                                                    ??
+                                                    "—"
+                                                }
+                                            </div>
+
+                                        </TableCell>
+
+                                    </tr>
+
+                                )
                             )
-                        )
-                    }
+                        }
 
-                </tbody>
+                    </tbody>
 
-            </table>
+                </table>
 
-        </div>
+            </div>
+        </>
 
     );
 
 }
+
 
 
 /*

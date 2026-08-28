@@ -698,7 +698,47 @@ function Inventory() {
                             description="Stock movements for this medicine will appear here."
                         />
                     ) : (
-                        <div className="overflow-x-auto">
+                        <>
+                            <div className="divide-y divide-slate-100 lg:hidden">
+                                {transactions.map((transaction) => (
+                                    <div key={transaction.id} className="py-4 first:pt-0 last:pb-0">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <p className="font-bold text-slate-800">
+                                                    {formatDateTime(transaction.transaction_date)}
+                                                </p>
+                                                <p className="mt-1 text-sm text-slate-500">
+                                                    Quantity: {formatQuantity(transaction.quantity)}
+                                                </p>
+                                            </div>
+                                            <TransactionBadge type={transaction.transaction_type} />
+                                        </div>
+
+                                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                                            <InventoryInfo
+                                                label="Reference"
+                                                value={transaction.reference || "—"}
+                                            />
+                                            <InventoryInfo
+                                                label="Resident"
+                                                value={transaction.resident?.full_name || "—"}
+                                            />
+                                            <div className="col-span-2">
+                                                <InventoryInfo
+                                                    label="Performed By"
+                                                    value={
+                                                        transaction.performed_by?.full_name ||
+                                                        transaction.performedBy?.full_name ||
+                                                        "—"
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="hidden overflow-x-auto lg:block">
                             <table className="min-w-full text-left text-sm">
                                 <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                                     <tr>
@@ -737,7 +777,8 @@ function Inventory() {
                                     ))}
                                 </tbody>
                             </table>
-                        </div>
+                            </div>
+                        </>
                     )}
                 </Modal>
             )}
@@ -760,69 +801,131 @@ function MedicineMaster({ medications, inventory, onEdit, onDelete }) {
     );
 
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th className="px-5 py-3">Medicine</th>
-                        <th className="px-5 py-3">Category</th>
-                        <th className="px-5 py-3">Strength</th>
-                        <th className="px-5 py-3">Unit / Form</th>
-                        <th className="px-5 py-3">Supplier</th>
-                        <th className="px-5 py-3">Stock</th>
-                        <th className="px-5 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {medications.map((medicine) => {
-                        const stock = stockMap.get(String(medicine.id));
+        <>
+            <div className="divide-y divide-slate-100 lg:hidden">
+                {medications.map((medicine) => {
+                    const stock = stockMap.get(String(medicine.id));
 
-                        return (
-                            <tr key={medicine.id} className="hover:bg-slate-50">
-                                <td className="px-5 py-4">
-                                    <div className="font-bold text-slate-800">
+                    return (
+                        <div key={medicine.id} className="p-5">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <h3 className="font-bold text-slate-800">
                                         {medicine.medicine_name}
-                                    </div>
-                                </td>
-                                <td className="px-5 py-4 text-slate-600">
-                                    {medicine.category || "—"}
-                                </td>
-                                <td className="px-5 py-4 text-slate-600">
-                                    {medicine.dosage || "—"}
-                                </td>
-                                <td className="px-5 py-4 text-slate-600">
-                                    {medicine.unit || "—"}
-                                </td>
-                                <td className="px-5 py-4 text-slate-600">
-                                    {medicine.supplier || "—"}
-                                </td>
-                                <td className="px-5 py-4">
-                                    {stock ? (
-                                        <StockBadge item={stock} />
-                                    ) : (
-                                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-                                            Not configured
-                                        </span>
-                                    )}
-                                </td>
-                                <td className="px-5 py-4">
-                                    <div className="flex justify-end gap-2">
-                                        <SecondaryButton onClick={() => onEdit(medicine)}>
-                                            Edit
-                                        </SecondaryButton>
-                                        <DangerButton onClick={() => onDelete(medicine)}>
-                                            Delete
-                                        </DangerButton>
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
+                                    </h3>
+                                    <p className="mt-1 text-sm text-slate-500">
+                                        {[medicine.category, medicine.dosage, medicine.unit]
+                                            .filter(Boolean)
+                                            .join(" · ") || "No category or strength recorded"}
+                                    </p>
+                                </div>
+
+                                {stock ? (
+                                    <StockBadge item={stock} />
+                                ) : (
+                                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                        Not configured
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                                <InventoryInfo
+                                    label="Category"
+                                    value={medicine.category || "—"}
+                                />
+                                <InventoryInfo
+                                    label="Strength"
+                                    value={medicine.dosage || "—"}
+                                />
+                                <InventoryInfo
+                                    label="Unit / Form"
+                                    value={medicine.unit || "—"}
+                                />
+                                <InventoryInfo
+                                    label="Supplier"
+                                    value={medicine.supplier || "—"}
+                                />
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                                <SecondaryButton onClick={() => onEdit(medicine)}>
+                                    Edit
+                                </SecondaryButton>
+                                <DangerButton onClick={() => onDelete(medicine)}>
+                                    Delete
+                                </DangerButton>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            <div className="hidden overflow-x-auto lg:block">
+                <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th className="px-5 py-3">Medicine</th>
+                            <th className="px-5 py-3">Category</th>
+                            <th className="px-5 py-3">Strength</th>
+                            <th className="px-5 py-3">Unit / Form</th>
+                            <th className="px-5 py-3">Supplier</th>
+                            <th className="px-5 py-3">Stock</th>
+                            <th className="px-5 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {medications.map((medicine) => {
+                            const stock = stockMap.get(String(medicine.id));
+
+                            return (
+                                <tr key={medicine.id} className="hover:bg-slate-50">
+                                    <td className="px-5 py-4">
+                                        <div className="font-bold text-slate-800">
+                                            {medicine.medicine_name}
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-600">
+                                        {medicine.category || "—"}
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-600">
+                                        {medicine.dosage || "—"}
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-600">
+                                        {medicine.unit || "—"}
+                                    </td>
+                                    <td className="px-5 py-4 text-slate-600">
+                                        {medicine.supplier || "—"}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        {stock ? (
+                                            <StockBadge item={stock} />
+                                        ) : (
+                                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                                Not configured
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex justify-end gap-2">
+                                            <SecondaryButton onClick={() => onEdit(medicine)}>
+                                                Edit
+                                            </SecondaryButton>
+                                            <DangerButton onClick={() => onDelete(medicine)}>
+                                                Delete
+                                            </DangerButton>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }
+
 
 function StockTable({ inventory, onEdit, onAdjust, onTransactions }) {
     if (inventory.length === 0) {
@@ -835,67 +938,124 @@ function StockTable({ inventory, onEdit, onAdjust, onTransactions }) {
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                        <th className="px-5 py-3">Medicine</th>
-                        <th className="px-5 py-3">Quantity</th>
-                        <th className="px-5 py-3">Minimum</th>
-                        <th className="px-5 py-3">Expiry</th>
-                        <th className="px-5 py-3">Location</th>
-                        <th className="px-5 py-3">Status</th>
-                        <th className="px-5 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {inventory.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50">
-                            <td className="px-5 py-4">
-                                <div className="font-bold text-slate-800">
+        <>
+            <div className="divide-y divide-slate-100 lg:hidden">
+                {inventory.map((item) => (
+                    <div key={item.id} className="p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-slate-800">
                                     {item.medication?.medicine_name || `Medication #${item.medication_id}`}
-                                </div>
-                                <div className="mt-1 text-xs text-slate-500">
+                                </h3>
+                                <p className="mt-1 text-sm text-slate-500">
                                     {[item.medication?.dosage, item.medication?.unit]
                                         .filter(Boolean)
                                         .join(" · ") || "—"}
-                                </div>
-                            </td>
-                            <td className="px-5 py-4 text-lg font-bold text-slate-800">
-                                {formatQuantity(item.quantity)}
-                            </td>
-                            <td className="px-5 py-4 text-slate-600">
-                                {formatQuantity(item.minimum_stock)}
-                            </td>
-                            <td className="px-5 py-4 text-slate-600">
-                                {formatDate(item.expiry_date)}
-                            </td>
-                            <td className="px-5 py-4 text-slate-600">
-                                {item.location || "—"}
-                            </td>
-                            <td className="px-5 py-4">
-                                <StockBadge item={item} />
-                            </td>
-                            <td className="px-5 py-4">
-                                <div className="flex flex-wrap justify-end gap-2">
-                                    <SecondaryButton onClick={() => onAdjust(item)}>
-                                        Adjust Stock
-                                    </SecondaryButton>
-                                    <SecondaryButton onClick={() => onTransactions(item)}>
-                                        History
-                                    </SecondaryButton>
-                                    <SecondaryButton onClick={() => onEdit(item)}>
-                                        Details
-                                    </SecondaryButton>
-                                </div>
-                            </td>
+                                </p>
+                            </div>
+
+                            <StockBadge item={item} />
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                            <InventoryInfo label="Quantity" value={formatQuantity(item.quantity)} />
+                            <InventoryInfo label="Minimum" value={formatQuantity(item.minimum_stock)} />
+                            <InventoryInfo label="Expiry" value={formatDate(item.expiry_date)} />
+                            <InventoryInfo label="Location" value={item.location || "—"} />
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                            <SecondaryButton onClick={() => onAdjust(item)}>
+                                Adjust Stock
+                            </SecondaryButton>
+                            <SecondaryButton onClick={() => onTransactions(item)}>
+                                History
+                            </SecondaryButton>
+                            <SecondaryButton onClick={() => onEdit(item)}>
+                                Details
+                            </SecondaryButton>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            <div className="hidden overflow-x-auto lg:block">
+                <table className="min-w-full text-left text-sm">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th className="px-5 py-3">Medicine</th>
+                            <th className="px-5 py-3">Quantity</th>
+                            <th className="px-5 py-3">Minimum</th>
+                            <th className="px-5 py-3">Expiry</th>
+                            <th className="px-5 py-3">Location</th>
+                            <th className="px-5 py-3">Status</th>
+                            <th className="px-5 py-3 text-right">Actions</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {inventory.map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-50">
+                                <td className="px-5 py-4">
+                                    <div className="font-bold text-slate-800">
+                                        {item.medication?.medicine_name || `Medication #${item.medication_id}`}
+                                    </div>
+                                    <div className="mt-1 text-xs text-slate-500">
+                                        {[item.medication?.dosage, item.medication?.unit]
+                                            .filter(Boolean)
+                                            .join(" · ") || "—"}
+                                    </div>
+                                </td>
+                                <td className="px-5 py-4 text-lg font-bold text-slate-800">
+                                    {formatQuantity(item.quantity)}
+                                </td>
+                                <td className="px-5 py-4 text-slate-600">
+                                    {formatQuantity(item.minimum_stock)}
+                                </td>
+                                <td className="px-5 py-4 text-slate-600">
+                                    {formatDate(item.expiry_date)}
+                                </td>
+                                <td className="px-5 py-4 text-slate-600">
+                                    {item.location || "—"}
+                                </td>
+                                <td className="px-5 py-4">
+                                    <StockBadge item={item} />
+                                </td>
+                                <td className="px-5 py-4">
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                        <SecondaryButton onClick={() => onAdjust(item)}>
+                                            Adjust Stock
+                                        </SecondaryButton>
+                                        <SecondaryButton onClick={() => onTransactions(item)}>
+                                            History
+                                        </SecondaryButton>
+                                        <SecondaryButton onClick={() => onEdit(item)}>
+                                            Details
+                                        </SecondaryButton>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </>
+    );
+}
+
+
+function InventoryInfo({ label, value }) {
+    return (
+        <div className="rounded-xl bg-slate-50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {label}
+            </p>
+            <p className="mt-1 break-words font-semibold text-slate-800">
+                {value ?? "—"}
+            </p>
         </div>
     );
 }
+
 
 function Metric({ label, value, tone = "normal" }) {
     return (
