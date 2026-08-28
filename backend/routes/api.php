@@ -59,6 +59,7 @@ use App\Http\Controllers\ResidentParcelController;
 use App\Http\Controllers\ResidentHomeLeaveController;
 use App\Http\Controllers\ResidentVisitorController;
 use App\Http\Controllers\WeeklyVitalCheckController;
+use App\Http\Controllers\TodayController;
 
 
 
@@ -837,6 +838,17 @@ Route::get(
 );
 
 
+
+/*
+|--------------------------------------------------------------------------
+| Today Controller
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/today',
+    [TodayController::class, 'index']
+);
 
 /*
 |--------------------------------------------------------------------------
