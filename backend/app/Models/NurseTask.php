@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Resident;
 use App\Models\User;
 use App\Models\AiAlert;
+use App\Models\CareRecord;
 
 
 
@@ -38,6 +39,12 @@ class NurseTask extends Model
         'ai_generated',
 
 
+        'task_type',
+
+
+        'source_type',
+
+
         'assigned_to',
 
 
@@ -65,7 +72,22 @@ class NurseTask extends Model
         'acknowledged_at',
 
 
-        'completed_time'
+        'completed_time',
+
+
+        'completion_notes',
+
+
+        'completed_by',
+
+
+        'care_record_id',
+
+
+        'care_plan_id',
+
+
+        'occurrence_key',
 
 
     ];
@@ -224,6 +246,33 @@ class NurseTask extends Model
         );
 
 
+    }
+    
+
+    public function carePlan()
+        {
+            return $this->belongsTo(
+                ResidentCarePlan::class,
+                'care_plan_id'
+            );
+        }
+
+
+    public function completedBy()
+    {
+        return $this->belongsTo(
+            User::class,
+            'completed_by'
+        );
+    }
+
+
+    public function careRecord()
+    {
+        return $this->belongsTo(
+            CareRecord::class,
+            'care_record_id'
+        );
     }
 
 

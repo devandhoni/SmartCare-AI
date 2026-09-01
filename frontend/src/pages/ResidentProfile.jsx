@@ -310,6 +310,267 @@ useEffect(() => {
     loadCareRecords();
 }, [id]);
 
+// F5.3 Resident Care Plan
+const [carePlans, setCarePlans] = useState([]);
+const [carePlansLoading, setCarePlansLoading] = useState(false);
+const [carePlanError, setCarePlanError] = useState("");
+const [carePlanSuccess, setCarePlanSuccess] = useState("");
+const [showCarePlanForm, setShowCarePlanForm] = useState(false);
+const [savingCarePlan, setSavingCarePlan] = useState(false);
+const [editingCarePlanId, setEditingCarePlanId] = useState(null);
+const [changingCarePlanStatusId, setChangingCarePlanStatusId] = useState(null);
+
+const emptyCarePlanForm = {
+    care_type: "Personal Care",
+    title: "",
+    instructions: "",
+    frequency: "DAILY",
+    time_slot: "AM",
+    scheduled_time: "08:30",
+    days_of_week: [],
+    priority: "NORMAL",
+    start_date: "",
+    end_date: "",
+};
+
+const [carePlanForm, setCarePlanForm] = useState(emptyCarePlanForm);
+
+const carePlanFrequencyOptions = [
+    { value: "DAILY", label: "Daily" },
+    { value: "WEEKLY", label: "Weekly" },
+    { value: "EVERY_SHIFT", label: "Every Shift" },
+    { value: "PRN", label: "As Needed (PRN)" },
+];
+
+const carePlanSlotOptions = [
+    { value: "AM", label: "AM" },
+    { value: "PM", label: "PM" },
+    { value: "NIGHT", label: "Night" },
+    { value: "ANY", label: "Any" },
+];
+
+const carePlanWeekdays = [
+    { value: "MON", label: "Mon" },
+    { value: "TUE", label: "Tue" },
+    { value: "WED", label: "Wed" },
+    { value: "THU", label: "Thu" },
+    { value: "FRI", label: "Fri" },
+    { value: "SAT", label: "Sat" },
+    { value: "SUN", label: "Sun" },
+];
+
+const normalizeCarePlanList = (data) => {
+    if (Array.isArray(data?.care_plans)) return data.care_plans;
+    if (Array.isArray(data?.plans)) return data.plans;
+    if (Array.isArray(data?.data)) return data.data;
+    if (Array.isArray(data)) return data;
+    return [];
+};
+
+const loadCarePlans = async () => {
+    try {
+        setCarePlansLoading(true);
+        setCarePlanError("");
+
+        const response = await api.get(`/residents/${id}/care-plans`);
+        setCarePlans(normalizeCarePlanList(response.data));
+    } catch (error) {
+        console.error("Failed to load resident care plans:", error);
+        setCarePlans([]);
+        setCarePlanError(
+            error.response?.data?.message ||
+            "Unable to load the resident care plan."
+        );
+    } finally {
+        setCarePlansLoading(false);
+    }
+};
+
+useEffect(() => {
+    loadCarePlans();
+}, [id]);
+
+const resetCarePlanForm = () => {
+    setCarePlanForm(emptyCarePlanForm);
+    setEditingCarePlanId(null);
+};
+
+const openNewCarePlan = () => {
+    resetCarePlanForm();
+    setCarePlanError("");
+    setCarePlanSuccess("");
+    setShowCarePlanForm(true);
+};
+
+const openEditCarePlan = (plan) => {
+    setCarePlanForm({
+        care_type: plan.care_type || "Personal Care",
+        title: plan.title || "",
+        instructions:
+            plan.instructions ||
+            plan.care_instructions ||
+            plan.description ||
+            "",
+        frequency: plan.frequency || "DAILY",
+        time_slot: plan.time_slot || "AM",
+        scheduled_time: plan.scheduled_time
+            ? String(plan.scheduled_time).slice(0, 5)
+            : "",
+        days_of_week: Array.isArray(plan.days_of_week)
+            ? plan.days_of_week
+            : [],
+        priority: plan.priority || "NORMAL",
+        start_date: plan.start_date
+            ? String(plan.start_date).slice(0, 10)
+            : "",
+        end_date: plan.end_date
+            ? String(plan.end_date).slice(0, 10)
+            : "",
+    });
+
+    setEditingCarePlanId(plan.id);
+    setCarePlanError("");
+    setCarePlanSuccess("");
+    setShowCarePlanForm(true);
+};
+
+const handleCarePlanFormChange = (event) => {
+    const { name, value } = event.target;
+
+    setCarePlanForm((current) => ({
+        ...current,
+        [name]: value,
+        ...(name === "frequency" && value !== "WEEKLY"
+            ? { days_of_week: [] }
+            : {}),
+    }));
+};
+
+const toggleCarePlanWeekday = (day) => {
+    setCarePlanForm((current) => ({
+        ...current,
+        days_of_week: current.days_of_week.includes(day)
+            ? current.days_of_week.filter((item) => item !== day)
+            : [...current.days_of_week, day],
+    }));
+};
+
+const handleSaveCarePlan = async (event) => {
+    event.preventDefault();
+
+    if (!carePlanForm.title.trim()) {
+        setCarePlanError("Please enter a care plan title.");
+        return;
+    }
+
+    if (
+        carePlanForm.frequency === "WEEKLY" &&
+        carePlanForm.days_of_week.length === 0
+    ) {
+        setCarePlanError(
+            "Please select at least one weekday for a weekly care plan."
+        );
+        return;
+    }
+
+    try {
+        setSavingCarePlan(true);
+        setCarePlanError("");
+        setCarePlanSuccess("");
+
+        const payload = {
+            care_type: carePlanForm.care_type,
+            title: carePlanForm.title.trim(),
+            instructions: carePlanForm.instructions.trim() || null,
+            frequency: carePlanForm.frequency,
+            time_slot:
+                carePlanForm.frequency === "EVERY_SHIFT" ||
+                carePlanForm.frequency === "PRN"
+                    ? "ANY"
+                    : carePlanForm.time_slot,
+            scheduled_time:
+                carePlanForm.frequency === "EVERY_SHIFT" ||
+                carePlanForm.frequency === "PRN"
+                    ? null
+                    : carePlanForm.scheduled_time || null,
+            days_of_week:
+                carePlanForm.frequency === "WEEKLY"
+                    ? carePlanForm.days_of_week
+                    : null,
+            priority: carePlanForm.priority,
+            start_date: carePlanForm.start_date || null,
+            end_date: carePlanForm.end_date || null,
+        };
+
+        if (editingCarePlanId) {
+            await api.put(`/care-plans/${editingCarePlanId}`, payload);
+            setCarePlanSuccess("Care plan updated successfully.");
+        } else {
+            await api.post(`/residents/${id}/care-plans`, payload);
+            setCarePlanSuccess("Care plan added successfully.");
+        }
+
+        await loadCarePlans();
+        setShowCarePlanForm(false);
+        resetCarePlanForm();
+    } catch (error) {
+        console.error("Failed to save resident care plan:", error);
+
+        if (error.response?.status === 422 && error.response?.data?.errors) {
+            const firstValidationError = Object.values(
+                error.response.data.errors
+            ).flat().find(Boolean);
+
+            setCarePlanError(
+                firstValidationError ||
+                "Please check the care plan information."
+            );
+        } else {
+            setCarePlanError(
+                error.response?.data?.message ||
+                "Unable to save the care plan. Please try again."
+            );
+        }
+    } finally {
+        setSavingCarePlan(false);
+    }
+};
+
+const handleCarePlanStatus = async (plan) => {
+    const active = Boolean(plan.is_active);
+    const actionLabel = active ? "deactivate" : "reactivate";
+
+    const confirmed = window.confirm(
+        `${active ? "Deactivate" : "Reactivate"} "${plan.title}" for this resident?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+        setChangingCarePlanStatusId(plan.id);
+        setCarePlanError("");
+        setCarePlanSuccess("");
+
+        await api.put(`/care-plans/${plan.id}/${actionLabel}`);
+
+        await loadCarePlans();
+
+        setCarePlanSuccess(
+            active
+                ? "Care plan deactivated. Its history has been retained."
+                : "Care plan reactivated successfully."
+        );
+    } catch (error) {
+        console.error("Failed to update care plan status:", error);
+        setCarePlanError(
+            error.response?.data?.message ||
+            "Unable to update the care plan status."
+        );
+    } finally {
+        setChangingCarePlanStatusId(null);
+    }
+};
+
 const [documentRecords, setDocumentRecords] = useState([]);
 const [documentsLoading, setDocumentsLoading] = useState(false);
 const [documentsError, setDocumentsError] = useState("");
@@ -1547,6 +1808,18 @@ const openNewCareRecord = () => {
     resetCareForm();
     setCareError("");
     setShowCareForm(true);
+
+    // The Care Plan section sits between the button and the Care Record form.
+    // After React renders the form, bring it into view so the nurse immediately
+    // sees the form instead of thinking the button did nothing.
+    window.setTimeout(() => {
+        document
+            .getElementById("resident-care-record-form")
+            ?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+    }, 50);
 };
 
 const openEditCareRecord = (record) => {
@@ -4384,7 +4657,7 @@ const getTimelineBadgeStyle = (entry) => {
                             sm:w-auto
                         "
                     >
-                        + Add Care Record
+                        + Record Unplanned Care
                     </button>
                 </div>
             </section>
@@ -4404,6 +4677,481 @@ const getTimelineBadgeStyle = (entry) => {
                     {careError}
                 </div>
             )}
+
+            {/* F5.3 Resident Care Plan */}
+            <section className="
+                w-full
+                min-w-0
+                overflow-hidden
+                rounded-2xl
+                border
+                border-slate-200
+                bg-white
+                shadow-sm
+            ">
+                <div className="
+                    flex
+                    flex-col
+                    gap-4
+                    border-b
+                    border-slate-200
+                    p-4
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between
+                    sm:p-6
+                ">
+                    <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-bold text-slate-800">
+                                Resident Care Plan
+                            </h3>
+
+                            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                {carePlans.filter((plan) => Boolean(plan.is_active)).length} active
+                            </span>
+                        </div>
+
+                        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+                            Define recurring care requirements for {resident.name}. SmartCare uses these plans to support scheduled routine care tasks; completed tasks are captured separately in Care History.
+                        </p>
+                    </div>
+
+                    {String(resident.status || "").toLowerCase() === "active" ? (
+                        <button
+                            type="button"
+                            onClick={openNewCarePlan}
+                            className="
+                                w-full
+                                rounded-xl
+                                bg-blue-600
+                                px-5
+                                py-3
+                                text-sm
+                                font-semibold
+                                text-white
+                                hover:bg-blue-700
+                                sm:w-auto
+                            "
+                        >
+                            + Add Care Plan
+                        </button>
+                    ) : (
+                        <span className="w-fit rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600">
+                            Historical · Read only
+                        </span>
+                    )}
+                </div>
+
+                <div className="p-4 sm:p-6">
+                    {carePlanError && (
+                        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                            {carePlanError}
+                        </div>
+                    )}
+
+                    {carePlanSuccess && (
+                        <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+                            {carePlanSuccess}
+                        </div>
+                    )}
+
+                    {showCarePlanForm &&
+                        String(resident.status || "").toLowerCase() === "active" && (
+                        <form
+                            onSubmit={handleSaveCarePlan}
+                            className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/40 p-4 sm:p-5"
+                        >
+                            <div className="mb-5">
+                                <h4 className="font-bold text-slate-800">
+                                    {editingCarePlanId ? "Edit Care Plan" : "Add Care Plan"}
+                                </h4>
+
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Set the resident's recurring care requirement and schedule.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Care Type *
+                                    </label>
+                                    <select
+                                        name="care_type"
+                                        value={carePlanForm.care_type}
+                                        onChange={handleCarePlanFormChange}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        {careTypeOptions.map((type) => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Care Plan Title *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="title"
+                                        value={carePlanForm.title}
+                                        onChange={handleCarePlanFormChange}
+                                        placeholder="Example: Morning Personal Care"
+                                        className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Frequency *
+                                    </label>
+                                    <select
+                                        name="frequency"
+                                        value={carePlanForm.frequency}
+                                        onChange={handleCarePlanFormChange}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        {carePlanFrequencyOptions.map((option) => (
+                                            <option key={option.value} value={option.value}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Priority *
+                                    </label>
+                                    <select
+                                        name="priority"
+                                        value={carePlanForm.priority}
+                                        onChange={handleCarePlanFormChange}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    >
+                                        {["LOW", "NORMAL", "HIGH", "URGENT", "CRITICAL"].map((priority) => (
+                                            <option key={priority} value={priority}>{priority}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {!["EVERY_SHIFT", "PRN"].includes(carePlanForm.frequency) && (
+                                    <>
+                                        <div>
+                                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                                Time Slot *
+                                            </label>
+                                            <select
+                                                name="time_slot"
+                                                value={carePlanForm.time_slot}
+                                                onChange={handleCarePlanFormChange}
+                                                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                            >
+                                                {carePlanSlotOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                                Scheduled Time
+                                            </label>
+                                            <input
+                                                type="time"
+                                                name="scheduled_time"
+                                                value={carePlanForm.scheduled_time}
+                                                onChange={handleCarePlanFormChange}
+                                                className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                            />
+                                        </div>
+                                    </>
+                                )}
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Start Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="start_date"
+                                        value={carePlanForm.start_date}
+                                        onChange={handleCarePlanFormChange}
+                                        className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        End Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        name="end_date"
+                                        value={carePlanForm.end_date}
+                                        min={carePlanForm.start_date || undefined}
+                                        onChange={handleCarePlanFormChange}
+                                        className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                    />
+                                </div>
+                            </div>
+
+                            {carePlanForm.frequency === "WEEKLY" && (
+                                <div className="mt-5">
+                                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                        Days of Week *
+                                    </label>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {carePlanWeekdays.map((day) => {
+                                            const selected = carePlanForm.days_of_week.includes(day.value);
+
+                                            return (
+                                                <button
+                                                    key={day.value}
+                                                    type="button"
+                                                    onClick={() => toggleCarePlanWeekday(day.value)}
+                                                    className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+                                                        selected
+                                                            ? "bg-blue-600 text-white"
+                                                            : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                                                    }`}
+                                                >
+                                                    {day.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-5">
+                                <label className="mb-2 block text-sm font-semibold text-slate-700">
+                                    Care Instructions
+                                </label>
+
+                                <textarea
+                                    rows="4"
+                                    name="instructions"
+                                    value={carePlanForm.instructions}
+                                    onChange={handleCarePlanFormChange}
+                                    placeholder="Example: Assist with washing, grooming, dressing and oral hygiene."
+                                    className="w-full resize-y rounded-xl border border-slate-300 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                                />
+                            </div>
+
+                            <div className="mt-5 flex flex-col-reverse gap-3 border-t border-blue-100 pt-5 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowCarePlanForm(false);
+                                        resetCarePlanForm();
+                                        setCarePlanError("");
+                                    }}
+                                    className="rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={savingCarePlan}
+                                    className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {savingCarePlan
+                                        ? "Saving..."
+                                        : editingCarePlanId
+                                            ? "Update Care Plan"
+                                            : "Save Care Plan"}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                    {carePlansLoading ? (
+                        <div className="py-8 text-center text-sm text-slate-500">
+                            Loading resident care plan...
+                        </div>
+                    ) : carePlans.length > 0 ? (
+                        <div className="space-y-4">
+                            {carePlans.map((plan) => {
+                                const active = Boolean(plan.is_active);
+                                const frequencyLabel =
+                                    carePlanFrequencyOptions.find(
+                                        (option) => option.value === plan.frequency
+                                    )?.label || plan.frequency || "-";
+
+                                const planTime =
+                                    plan.scheduled_time
+                                        ? String(plan.scheduled_time).slice(0, 5)
+                                        : "";
+
+                                const days =
+                                    Array.isArray(plan.days_of_week) &&
+                                    plan.days_of_week.length > 0
+                                        ? plan.days_of_week.join(", ")
+                                        : "";
+
+                                return (
+                                    <article
+                                        key={plan.id}
+                                        className={`rounded-2xl border p-4 sm:p-5 ${
+                                            active
+                                                ? "border-slate-200 bg-white"
+                                                : "border-slate-200 bg-slate-50"
+                                        }`}
+                                    >
+                                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                                        {plan.care_type || "Care"}
+                                                    </span>
+
+                                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                                        active
+                                                            ? "bg-emerald-50 text-emerald-700"
+                                                            : "bg-slate-200 text-slate-600"
+                                                    }`}>
+                                                        {active ? "Active" : "Inactive"}
+                                                    </span>
+
+                                                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                                        ["URGENT", "CRITICAL"].includes(String(plan.priority || "").toUpperCase())
+                                                            ? "bg-rose-50 text-rose-700"
+                                                            : String(plan.priority || "").toUpperCase() === "HIGH"
+                                                                ? "bg-amber-50 text-amber-700"
+                                                                : "bg-slate-100 text-slate-600"
+                                                    }`}>
+                                                        {plan.priority || "NORMAL"}
+                                                    </span>
+                                                </div>
+
+                                                <h4 className="mt-3 break-words text-lg font-bold text-slate-800">
+                                                    {plan.title}
+                                                </h4>
+
+                                                {(plan.instructions || plan.care_instructions || plan.description) && (
+                                                    <p className="mt-2 break-words text-sm leading-6 text-slate-600">
+                                                        {plan.instructions || plan.care_instructions || plan.description}
+                                                    </p>
+                                                )}
+
+                                                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                                    <div className="rounded-xl bg-slate-50 p-3">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                            Frequency
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                            {frequencyLabel}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="rounded-xl bg-slate-50 p-3">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                            Schedule
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                            {plan.frequency === "EVERY_SHIFT"
+                                                                ? "AM · PM · Night"
+                                                                : plan.frequency === "PRN"
+                                                                    ? "As needed"
+                                                                    : [plan.time_slot, planTime].filter(Boolean).join(" · ") || "-"}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="rounded-xl bg-slate-50 p-3">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                            Days
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                            {plan.frequency === "WEEKLY"
+                                                                ? days || "-"
+                                                                : plan.frequency === "DAILY"
+                                                                    ? "Every day"
+                                                                    : "-"}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="rounded-xl bg-slate-50 p-3">
+                                                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                                            Period
+                                                        </p>
+                                                        <p className="mt-1 text-sm font-semibold text-slate-700">
+                                                            {plan.start_date
+                                                                ? formatDate(plan.start_date)
+                                                                : "Not set"}
+                                                            {" → "}
+                                                            {plan.end_date
+                                                                ? formatDate(plan.end_date)
+                                                                : "Ongoing"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {String(resident.status || "").toLowerCase() === "active" && (
+                                                <div className="flex shrink-0 flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditCarePlan(plan)}
+                                                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                                                    >
+                                                        Edit
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        disabled={changingCarePlanStatusId === plan.id}
+                                                        onClick={() => handleCarePlanStatus(plan)}
+                                                        className={`rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
+                                                            active
+                                                                ? "border border-amber-200 text-amber-700 hover:bg-amber-50"
+                                                                : "bg-blue-600 text-white hover:bg-blue-700"
+                                                        }`}
+                                                    >
+                                                        {changingCarePlanStatusId === plan.id
+                                                            ? "Saving..."
+                                                            : active
+                                                                ? "Deactivate"
+                                                                : "Reactivate"}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                            <div className="text-3xl">📋</div>
+                            <h4 className="mt-3 font-bold text-slate-800">
+                                No care plan configured
+                            </h4>
+                            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500">
+                                {String(resident.status || "").toLowerCase() === "active"
+                                    ? "Add recurring care requirements so routine care can be scheduled consistently."
+                                    : "No historical care plan is recorded for this resident."}
+                            </p>
+
+                            {String(resident.status || "").toLowerCase() === "active" && (
+                                <button
+                                    type="button"
+                                    onClick={openNewCarePlan}
+                                    className="mt-5 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+                                >
+                                    + Add First Care Plan
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </section>
 
             {/* Today summary */}
             <section className="
@@ -4444,7 +5192,10 @@ const getTimelineBadgeStyle = (entry) => {
 
             {/* Add/Edit form */}
             {showCareForm && (
-                <section className="
+                <section
+                    id="resident-care-record-form"
+                    className="
+                    scroll-mt-24
                     overflow-hidden
                     rounded-2xl
                     border
@@ -4699,7 +5450,8 @@ const getTimelineBadgeStyle = (entry) => {
                         </h3>
 
                         <p className="mt-1 text-sm text-slate-500">
-                            Care activities and observations recorded for this resident.
+                            Completed care from scheduled nurse tasks is recorded automatically.
+                            Use "Record Unplanned Care" only for care provided outside a scheduled task.
                         </p>
                     </div>
 

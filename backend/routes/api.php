@@ -60,6 +60,7 @@ use App\Http\Controllers\ResidentHomeLeaveController;
 use App\Http\Controllers\ResidentVisitorController;
 use App\Http\Controllers\WeeklyVitalCheckController;
 use App\Http\Controllers\TodayController;
+use App\Http\Controllers\ResidentCarePlanController;
 
 
 
@@ -856,6 +857,7 @@ Route::get(
 |--------------------------------------------------------------------------
 */
 
+Route::post('/nurse-tasks/routine-care', [NurseTaskController::class, 'storeRoutineCare']);
 
 Route::get(
     '/nurse/tasks',
@@ -930,6 +932,28 @@ Route::put(
     ]
 
 );
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Resident Care Plan Controller
+|--------------------------------------------------------------------------
+*/
+
+
+
+Route::get('/residents/{residentId}/care-plans', [ResidentCarePlanController::class, 'index']);
+Route::post('/residents/{residentId}/care-plans', [ResidentCarePlanController::class, 'store']);
+
+Route::get('/care-plans/{id}', [ResidentCarePlanController::class, 'show']);
+Route::put('/care-plans/{id}', [ResidentCarePlanController::class, 'update']);
+
+Route::put('/care-plans/{id}/deactivate', [ResidentCarePlanController::class, 'deactivate']);
+Route::put('/care-plans/{id}/activate', [ResidentCarePlanController::class, 'activate']);
+
 
 
 /*

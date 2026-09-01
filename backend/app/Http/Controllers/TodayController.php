@@ -59,6 +59,42 @@ class TodayController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Due / Overdue Routine Care
+        |
+        | READ ONLY.
+        | This controller never generates care-plan tasks. It only classifies
+        | NurseTask occurrences that have already been generated elsewhere.
+        |--------------------------------------------------------------------------
+        */
+
+        $routineCareTasks = $pendingTasks
+            ->filter(function ($task) {
+                return $task->task_type === 'ROUTINE_CARE';
+            })
+            ->values();
+
+        $overdueCareTasks = $routineCareTasks
+            ->filter(function ($task) use ($now) {
+                return $task->scheduled_time
+                    && Carbon::parse($task->scheduled_time)->lt($now);
+            })
+            ->values();
+
+        $dueCareTasks = $routineCareTasks
+            ->filter(function ($task) use ($now) {
+                if (!$task->scheduled_time) {
+                    return false;
+                }
+
+                $scheduled = Carbon::parse($task->scheduled_time);
+
+                return $scheduled->greaterThanOrEqualTo($now)
+                    && $scheduled->isSameDay($now);
+            })
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
         | Critical Alerts
         |--------------------------------------------------------------------------
         */
@@ -244,6 +280,8 @@ class TodayController extends Controller
                 'active_residents' => $activeResidents->count(),
                 'pending_tasks' => $pendingTasks->count(),
                 'overdue_tasks' => $overdueTasks->count(),
+                'due_care_tasks' => $dueCareTasks->count(),
+                'overdue_care_tasks' => $overdueCareTasks->count(),
                 'critical_alerts' => $criticalAlerts,
                 'weekly_vitals_due' => $weeklyVitalsDue->count(),
                 'monthly_glucose_due' => $monthlyGlucoseDue->count(),
@@ -272,6 +310,42 @@ class TodayController extends Controller
 
             'home_leave' => $homeLeaveItems,
 
+            'care_activities' => [
+                'due' => $dueCareTasks->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'resident_id' => $task->resident_id,
+                        'resident' => $task->resident?->full_name,
+                        'task_name' => $task->task_name,
+                        'description' => $task->description,
+                        'priority' => $task->priority,
+                        'status' => $task->status,
+                        'scheduled_time' => $task->scheduled_time,
+                        'source_type' => $task->source_type,
+                        'care_plan_id' => $task->care_plan_id,
+                        'occurrence_key' => $task->occurrence_key,
+                        'overdue' => false,
+                    ];
+                })->values(),
+
+                'overdue' => $overdueCareTasks->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'resident_id' => $task->resident_id,
+                        'resident' => $task->resident?->full_name,
+                        'task_name' => $task->task_name,
+                        'description' => $task->description,
+                        'priority' => $task->priority,
+                        'status' => $task->status,
+                        'scheduled_time' => $task->scheduled_time,
+                        'source_type' => $task->source_type,
+                        'care_plan_id' => $task->care_plan_id,
+                        'occurrence_key' => $task->occurrence_key,
+                        'overdue' => true,
+                    ];
+                })->values(),
+            ],
+
             'tasks' => $pendingTasks->map(function ($task) use ($now) {
                 $scheduled = $task->scheduled_time
                     ? Carbon::parse($task->scheduled_time)
@@ -287,6 +361,10 @@ class TodayController extends Controller
                     'status' => $task->status,
                     'scheduled_time' => $task->scheduled_time,
                     'ai_generated' => (bool) $task->ai_generated,
+                    'task_type' => $task->task_type,
+                    'source_type' => $task->source_type,
+                    'care_plan_id' => $task->care_plan_id,
+                    'occurrence_key' => $task->occurrence_key,
                     'overdue' => $scheduled
                         ? $scheduled->lt($now)
                         : false,
