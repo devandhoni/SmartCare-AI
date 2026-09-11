@@ -444,6 +444,104 @@ class ClinicalTimelineService
 
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | Medication Held
+    |--------------------------------------------------------------------------
+    |
+    | ClinicalEventType currently has no dedicated MEDICATION_HELD value.
+    | Keep the audit evidence without expanding the enum by recording it as a
+    | NURSE_ACTION with a medication-specific source type.
+    |
+    */
+
+    public function recordMedicationHeld(
+        $residentId,
+        $description,
+        $sourceId = null
+    )
+    {
+        return $this->record(
+            $residentId,
+            ClinicalEventType::NURSE_ACTION,
+            "Medication Held",
+            $description,
+            "MedicationHeld",
+            $sourceId
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Medication Refused
+    |--------------------------------------------------------------------------
+    */
+
+    public function recordMedicationRefused(
+        $residentId,
+        $description,
+        $sourceId = null
+    )
+    {
+        return $this->record(
+            $residentId,
+            ClinicalEventType::NURSE_ACTION,
+            "Medication Refused",
+            $description,
+            "MedicationRefused",
+            $sourceId
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Medication Unavailable
+    |--------------------------------------------------------------------------
+    */
+
+    public function recordMedicationUnavailable(
+        $residentId,
+        $description,
+        $sourceId = null
+    )
+    {
+        return $this->record(
+            $residentId,
+            ClinicalEventType::NURSE_ACTION,
+            "Medication Unavailable",
+            $description,
+            "MedicationUnavailable",
+            $sourceId
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Medication Meal Confirmed
+    |--------------------------------------------------------------------------
+    */
+
+    public function recordMedicationMealConfirmed(
+        $residentId,
+        $description,
+        $sourceId = null
+    )
+    {
+        return $this->record(
+            $residentId,
+            ClinicalEventType::NURSE_ACTION,
+            "Medication Meal Confirmed",
+            $description,
+            "MedicationMealConfirmation",
+            $sourceId
+        );
+    }
+
+
+
     public function recordNurseAction(
         $residentId,
         $action,

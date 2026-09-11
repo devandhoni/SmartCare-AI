@@ -2,294 +2,207 @@
 
 namespace App\Services;
 
-
-use App\Models\ResidentMedication;
+use App\Models\MedicationAdministrationRecord;
 use App\Models\NurseTask;
 use App\Models\Notification;
-use App\Models\MedicationAdministrationRecord;
+use App\Models\ResidentMedication;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\DB;
 
 class MedicationScheduleService
 {
-
-
     /*
     |--------------------------------------------------------------------------
     | Check Due Medications
     |--------------------------------------------------------------------------
+    |
+    | This method is intentionally side-effectful: it may create a NurseTask
+    | and Notification. It must be called only by the explicit medication
+    | due-check workflow, never simply to render Today.
+    |
+    | Current F6.1 rule:
+    | - only Active residents
+    | - only prescriptions active on today's date
+    | - scheduled medication is considered due from its scheduled time until
+    |   30 minutes afterwards
+    | - one reminder task per resident-medication/date occurrence
+    | - completed medication is not reminded
+    |
     */
 
-    public function checkDueMedications()
+    public function checkDueMedications(): array
     {
-
-
         $now = Carbon::now();
+        $today = $now->toDateString();
 
-
-        $currentTime = $now->format('H:i:s');
-
-
-
-        $medications = ResidentMedication::with(
-            'resident',
-            'medication'
-        )
-        ->whereNotNull(
-            'scheduled_time'
-        )
-        ->get();
-
-
+        $medications = ResidentMedication::with([
+                'resident',
+                'medication',
+            ])
+            ->whereNotNull('scheduled_time')
+            ->whereHas('resident', function ($query) {
+                $query->where('status', 'Active');
+            })
+            ->where(function ($query) use ($today) {
+                $query
+                    ->whereNull('start_date')
+                    ->orWhereDate('start_date', '<=', $today);
+            })
+            ->where(function ($query) use ($today) {
+                $query
+                    ->whereNull('end_date')
+                    ->orWhereDate('end_date', '>=', $today);
+            })
+            ->get();
 
         $dueMedications = [];
 
-
-
-        foreach($medications as $medication)
-        {
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | Check Time Difference
-            |--------------------------------------------------------------------------
-            */
-
-
-            $scheduled =
-                Carbon::parse(
-                    $medication->scheduled_time
-                );
-
-
-
-            $current =
-                Carbon::parse(
-                    $currentTime
-                );
-
-
-
-            $difference =
-                $current->diffInMinutes(
-                    $scheduled,
-                    false
-                );
-
-
+        foreach ($medications as $medication) {
+            if (!$medication->resident || !$medication->medication) {
+                continue;
+            }
 
             /*
-            |--------------------------------------------------------------------------
-            | Medication Due Window
-            |
-            | 0 to 30 minutes before medication time
-            |--------------------------------------------------------------------------
+            | Build today's scheduled occurrence using the application
+            | timezone. ResidentMedication::scheduled_time may be returned as
+            | either a time string or a Carbon value depending on the model.
             */
+            $scheduledTime = $medication->scheduled_time instanceof Carbon
+                ? $medication->scheduled_time->format('H:i:s')
+                : Carbon::parse($medication->scheduled_time)->format('H:i:s');
 
+            $scheduledAt = Carbon::parse(
+                $today . ' ' . $scheduledTime
+            );
 
-            if(
-                $difference <= 0 &&
-                $difference >= -30
-            )
-            {
+            /*
+            | Due window: scheduled time through 30 minutes afterwards.
+            */
+            if (
+                $now->lt($scheduledAt)
+                || $now->gt($scheduledAt->copy()->addMinutes(30))
+            ) {
+                continue;
+            }
 
+            $completed =
+                MedicationAdministrationRecord::where(
+                    'resident_medication_id',
+                    $medication->id
+                )
+                ->whereDate('administered_date', $today)
+                ->where('status', 'COMPLETED')
+                ->exists();
 
-                /*
-                |--------------------------------------------------------------------------
-                | Check Already Completed
-                |--------------------------------------------------------------------------
-                */
+            if ($completed) {
+                continue;
+            }
 
+            /*
+            | NurseTask has no resident_medication_id column. occurrence_key
+            | therefore provides a stable medication occurrence identity and
+            | prevents one resident's different medicines from suppressing
+            | each other's reminders.
+            */
+            $occurrenceKey =
+                'MED:'
+                . $medication->id
+                . ':'
+                . $today;
 
-                $completed =
-                    MedicationAdministrationRecord::where(
-                        'resident_medication_id',
-                        $medication->id
+            DB::transaction(function () use (
+                $medication,
+                $scheduledAt,
+                $occurrenceKey
+            ) {
+                $existingTask =
+                    NurseTask::where(
+                        'occurrence_key',
+                        $occurrenceKey
                     )
-                    ->whereDate(
-                        'completed_time',
-                        today()
-                    )
-                    ->where(
-                        'status',
-                        'COMPLETED'
-                    )
-                    ->exists();
+                    ->lockForUpdate()
+                    ->first();
 
-
-
-                if(!$completed)
-{
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create Nurse Task
-    |--------------------------------------------------------------------------
-    */
-
-
-    $existingTask =
-        NurseTask::where(
-            'resident_id',
-            $medication->resident_id
-        )
-        ->where(
-            'task_name',
-            'Administer Medication'
-        )
-        ->whereDate(
-            'scheduled_time',
-            today()
-        )
-        ->where(
-            'status',
-            'Pending'
-        )
-        ->first();
-
-
-
-                if(!$existingTask)
-                {
-
-
-                    NurseTask::create([
-
-
-                        'resident_id'=>
-                            $medication->resident_id,
-
-
-                        'task_name'=>
-                            'Administer Medication',
-
-
-                        'description'=>
-
-                            $medication
-                            ->medication
-                            ->medicine_name
-                            .
-                            ' for '
-                            .
-                            $medication
-                            ->resident
-                            ->full_name
-                            .
-                            ' is due at '
-                            .
-                            $medication
-                            ->scheduled_time,
-
-
-                        'scheduled_time'=>
-                            Carbon::parse(
-                                $medication->scheduled_time
-                            ),
-
-
-                        'status'=>
-                            'Pending'
-
-
-                    ]);
-
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Create Notification
-                    |--------------------------------------------------------------------------
-                    */
-
-
-                    Notification::create([
-
-
-                        'user_id'=>
-                            null,
-
-
-                        'title'=>
-                            'Medication Reminder',
-
-
-                        'message'=>
-
-                            $medication
-                            ->medication
-                            ->medicine_name
-                            .
-                            ' for '
-                            .
-                            $medication
-                            ->resident
-                            ->full_name
-                            .
-                            ' is due at '
-                            .
-                            $medication->scheduled_time,
-
-
-                        'type'=>
-                            'MEDICATION',
-
-
-                        'read_status'=>
-                            0
-
-
-                    ]);
-
-
-
+                if ($existingTask) {
+                    return;
                 }
 
-
-
-                $dueMedications[] = [
-
-                    'resident_id'=>
+                $task = NurseTask::create([
+                    'resident_id' =>
                         $medication->resident_id,
 
+                    'occurrence_key' =>
+                        $occurrenceKey,
 
-                    'resident'=>
-                        $medication->resident->full_name,
+                    'source_type' =>
+                        'MEDICATION',
 
+                    'task_name' =>
+                        'Administer Medication',
 
-                    'medicine'=>
-                        $medication->medication->medicine_name,
+                    'description' =>
+                        $medication->medication->medicine_name
+                        . ' for '
+                        . $medication->resident->full_name
+                        . ' is due at '
+                        . $scheduledAt->format('H:i'),
 
+                    'scheduled_time' =>
+                        $scheduledAt,
 
-                    'time_slot'=>
-                        $medication->time_slot,
+                    'status' =>
+                        'Pending',
 
+                    'priority' =>
+                        'NORMAL',
+                ]);
 
-                    'scheduled_time'=>
-                        $medication->scheduled_time,
+                Notification::create([
+                    'user_id' =>
+                        null,
 
+                    'title' =>
+                        'Medication Reminder',
 
-                    'minutes_difference'=>
-                        abs($difference)
+                    'message' =>
+                        $medication->medication->medicine_name
+                        . ' for '
+                        . $medication->resident->full_name
+                        . ' is due at '
+                        . $scheduledAt->format('H:i'),
 
-                ];
+                    'type' =>
+                        'MEDICATION',
 
-            }
+                    'read_status' =>
+                        0,
+                ]);
+            });
 
+            $dueMedications[] = [
+                'resident_medication_id' =>
+                    $medication->id,
 
-            }
+                'resident_id' =>
+                    $medication->resident_id,
 
+                'resident' =>
+                    $medication->resident->full_name,
 
+                'medicine' =>
+                    $medication->medication->medicine_name,
+
+                'time_slot' =>
+                    $medication->time_slot,
+
+                'scheduled_time' =>
+                    $scheduledAt->toDateTimeString(),
+
+                'minutes_difference' =>
+                    $scheduledAt->diffInMinutes($now),
+            ];
         }
 
-
-
         return $dueMedications;
-
-
     }
-
-
 }

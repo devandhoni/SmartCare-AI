@@ -36,6 +36,10 @@ class TodayController extends Controller
         |--------------------------------------------------------------------------
         | Nurse Tasks
         |--------------------------------------------------------------------------
+        |
+        | READ ONLY. Today never creates NurseTasks. Care-plan generation and
+        | medication due checking remain explicit side-effectful workflows.
+        |
         */
 
         $openTaskStatuses = [
@@ -60,10 +64,6 @@ class TodayController extends Controller
         /*
         |--------------------------------------------------------------------------
         | Due / Overdue Routine Care
-        |
-        | READ ONLY.
-        | This controller never generates care-plan tasks. It only classifies
-        | NurseTask occurrences that have already been generated elsewhere.
         |--------------------------------------------------------------------------
         */
 
@@ -95,6 +95,29 @@ class TodayController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Medication Reminder Tasks
+        |--------------------------------------------------------------------------
+        |
+        | These are already-created NurseTasks from MedicationScheduleService.
+        | Today only classifies and displays them.
+        |
+        */
+
+        $medicationTasks = $pendingTasks
+            ->filter(function ($task) {
+                return strtoupper((string) $task->source_type) === 'MEDICATION';
+            })
+            ->values();
+
+        $overdueMedicationTasks = $medicationTasks
+            ->filter(function ($task) use ($now) {
+                return $task->scheduled_time
+                    && Carbon::parse($task->scheduled_time)->lt($now);
+            })
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
         | Critical Alerts
         |--------------------------------------------------------------------------
         */
@@ -108,11 +131,12 @@ class TodayController extends Controller
         /*
         |--------------------------------------------------------------------------
         | Today's Medication Schedule
+        |--------------------------------------------------------------------------
         |
         | READ ONLY.
-        | This deliberately does not call MedicationScheduleService because
-        | that service creates nurse tasks and notifications.
-        |--------------------------------------------------------------------------
+        | This deliberately does not call MedicationScheduleService because that
+        | service creates NurseTasks and Notifications.
+        |
         */
 
         $residentMedications = ResidentMedication::query()
@@ -137,12 +161,14 @@ class TodayController extends Controller
             ->orderBy('scheduled_time')
             ->get();
 
-        $medicationIds = $residentMedications->pluck('id');
+        $residentMedicationIds = $residentMedications->pluck('id');
 
         $todayMedicationRecords = MedicationAdministrationRecord::query()
-            ->whereIn('resident_medication_id', $medicationIds)
+            ->whereIn('resident_medication_id', $residentMedicationIds)
             ->whereDate('administered_date', $today)
+            ->orderByDesc('created_on')
             ->get()
+            ->unique('resident_medication_id')
             ->keyBy('resident_medication_id');
 
         $medicationRounds = [
@@ -153,12 +179,32 @@ class TodayController extends Controller
 
         foreach ($residentMedications as $residentMedication) {
             $record = $todayMedicationRecords->get($residentMedication->id);
-
             $slot = strtoupper((string) $residentMedication->time_slot);
 
             if (!array_key_exists($slot, $medicationRounds)) {
                 continue;
             }
+
+            $status = strtoupper((string) ($record?->status ?? 'PENDING'));
+            $mealType = $record?->meal_type ?? $this->mealForSlot($slot);
+            $mealConfirmed = (bool) ($record?->meal_confirmed ?? false);
+
+            $scheduledAt = $this->scheduledDateTime(
+                $today,
+                $residentMedication->scheduled_time
+            );
+
+            $isPendingLike = in_array($status, ['PENDING', 'DELAYED'], true);
+            $overdue = $isPendingLike
+                && $scheduledAt
+                && $scheduledAt->lt($now);
+
+            $roundComplete = $status === 'COMPLETED'
+                && ($mealType === null || $mealConfirmed);
+
+            $familyNotificationEligible = $status === 'COMPLETED'
+                && $mealType !== null
+                && $mealConfirmed;
 
             $medicationRounds[$slot][] = [
                 'resident_medication_id' => $residentMedication->id,
@@ -171,10 +217,61 @@ class TodayController extends Controller
                 'dosage_instruction' => $residentMedication->dosage_instruction,
                 'dosage_quantity' => $residentMedication->dosage_quantity,
                 'scheduled_time' => $residentMedication->scheduled_time,
-                'status' => $record?->status ?? 'PENDING',
+                'scheduled_at' => $scheduledAt?->toDateTimeString(),
+                'status' => $status,
+                'administration_record_id' => $record?->id,
                 'completed_time' => $record?->completed_time,
+                'completed_by' => $record?->completed_by,
+                'remarks' => $record?->remarks,
+                'meal_type' => $mealType,
+                'meal_confirmed' => $mealConfirmed,
+                'meal_confirmed_at' => $record?->meal_confirmed_at,
+                'meal_notes' => $record?->meal_notes,
+                'overdue' => $overdue,
+                'round_complete' => $roundComplete,
+                'family_notification_eligible' => $familyNotificationEligible,
             ];
         }
+
+        $medicationItems = collect($medicationRounds)->flatten(1);
+
+        $medicationScheduled = $medicationItems->count();
+
+        $medicationCompleted = $medicationItems
+            ->where('status', 'COMPLETED')
+            ->count();
+
+        $medicationPending = $medicationItems
+            ->filter(function ($item) {
+                return in_array(
+                    strtoupper((string) ($item['status'] ?? '')),
+                    ['PENDING', 'DELAYED'],
+                    true
+                );
+            })
+            ->count();
+
+        $medicationExceptions = $medicationItems
+            ->filter(function ($item) {
+                return in_array(
+                    strtoupper((string) ($item['status'] ?? '')),
+                    ['HELD', 'REFUSED', 'UNAVAILABLE', 'MISSED'],
+                    true
+                );
+            })
+            ->count();
+
+        $medicationOverdue = $medicationItems
+            ->where('overdue', true)
+            ->count();
+
+        $medicationMealsPending = $medicationItems
+            ->filter(function ($item) {
+                return strtoupper((string) ($item['status'] ?? '')) === 'COMPLETED'
+                    && !empty($item['meal_type'])
+                    && empty($item['meal_confirmed']);
+            })
+            ->count();
 
         /*
         |--------------------------------------------------------------------------
@@ -282,6 +379,13 @@ class TodayController extends Controller
                 'overdue_tasks' => $overdueTasks->count(),
                 'due_care_tasks' => $dueCareTasks->count(),
                 'overdue_care_tasks' => $overdueCareTasks->count(),
+                'medication_scheduled' => $medicationScheduled,
+                'medication_pending' => $medicationPending,
+                'medication_completed' => $medicationCompleted,
+                'medication_exceptions' => $medicationExceptions,
+                'medication_overdue' => $medicationOverdue,
+                'medication_meals_pending' => $medicationMealsPending,
+                'medication_task_overdue' => $overdueMedicationTasks->count(),
                 'critical_alerts' => $criticalAlerts,
                 'weekly_vitals_due' => $weeklyVitalsDue->count(),
                 'monthly_glucose_due' => $monthlyGlucoseDue->count(),
@@ -289,18 +393,9 @@ class TodayController extends Controller
             ],
 
             'medication_rounds' => [
-                'AM' => [
-                    'total' => count($medicationRounds['AM']),
-                    'items' => $medicationRounds['AM'],
-                ],
-                'PM' => [
-                    'total' => count($medicationRounds['PM']),
-                    'items' => $medicationRounds['PM'],
-                ],
-                'NIGHT' => [
-                    'total' => count($medicationRounds['NIGHT']),
-                    'items' => $medicationRounds['NIGHT'],
-                ],
+                'AM' => $this->roundPayload($medicationRounds['AM']),
+                'PM' => $this->roundPayload($medicationRounds['PM']),
+                'NIGHT' => $this->roundPayload($medicationRounds['NIGHT']),
             ],
 
             'due_checks' => [
@@ -312,37 +407,11 @@ class TodayController extends Controller
 
             'care_activities' => [
                 'due' => $dueCareTasks->map(function ($task) {
-                    return [
-                        'id' => $task->id,
-                        'resident_id' => $task->resident_id,
-                        'resident' => $task->resident?->full_name,
-                        'task_name' => $task->task_name,
-                        'description' => $task->description,
-                        'priority' => $task->priority,
-                        'status' => $task->status,
-                        'scheduled_time' => $task->scheduled_time,
-                        'source_type' => $task->source_type,
-                        'care_plan_id' => $task->care_plan_id,
-                        'occurrence_key' => $task->occurrence_key,
-                        'overdue' => false,
-                    ];
+                    return $this->taskPayload($task, false);
                 })->values(),
 
                 'overdue' => $overdueCareTasks->map(function ($task) {
-                    return [
-                        'id' => $task->id,
-                        'resident_id' => $task->resident_id,
-                        'resident' => $task->resident?->full_name,
-                        'task_name' => $task->task_name,
-                        'description' => $task->description,
-                        'priority' => $task->priority,
-                        'status' => $task->status,
-                        'scheduled_time' => $task->scheduled_time,
-                        'source_type' => $task->source_type,
-                        'care_plan_id' => $task->care_plan_id,
-                        'occurrence_key' => $task->occurrence_key,
-                        'overdue' => true,
-                    ];
+                    return $this->taskPayload($task, true);
                 })->values(),
             ],
 
@@ -371,5 +440,83 @@ class TodayController extends Controller
                 ];
             })->values(),
         ]);
+    }
+
+    private function mealForSlot(string $slot): ?string
+    {
+        return match (strtoupper($slot)) {
+            'AM' => 'Breakfast',
+            'PM' => 'Lunch',
+            'NIGHT' => 'Dinner',
+            default => null,
+        };
+    }
+
+    private function scheduledDateTime(
+        Carbon $today,
+        $scheduledTime
+    ): ?Carbon {
+        if (!$scheduledTime) {
+            return null;
+        }
+
+        try {
+            $time = Carbon::parse($scheduledTime)->format('H:i:s');
+
+            return Carbon::parse(
+                $today->toDateString() . ' ' . $time
+            );
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function roundPayload(array $items): array
+    {
+        $collection = collect($items);
+
+        return [
+            'total' => $collection->count(),
+            'completed' => $collection->where('status', 'COMPLETED')->count(),
+            'pending' => $collection->filter(function ($item) {
+                return in_array(
+                    strtoupper((string) ($item['status'] ?? '')),
+                    ['PENDING', 'DELAYED'],
+                    true
+                );
+            })->count(),
+            'exceptions' => $collection->filter(function ($item) {
+                return in_array(
+                    strtoupper((string) ($item['status'] ?? '')),
+                    ['HELD', 'REFUSED', 'UNAVAILABLE', 'MISSED'],
+                    true
+                );
+            })->count(),
+            'overdue' => $collection->where('overdue', true)->count(),
+            'meals_pending' => $collection->filter(function ($item) {
+                return strtoupper((string) ($item['status'] ?? '')) === 'COMPLETED'
+                    && !empty($item['meal_type'])
+                    && empty($item['meal_confirmed']);
+            })->count(),
+            'items' => array_values($items),
+        ];
+    }
+
+    private function taskPayload($task, bool $overdue): array
+    {
+        return [
+            'id' => $task->id,
+            'resident_id' => $task->resident_id,
+            'resident' => $task->resident?->full_name,
+            'task_name' => $task->task_name,
+            'description' => $task->description,
+            'priority' => $task->priority,
+            'status' => $task->status,
+            'scheduled_time' => $task->scheduled_time,
+            'source_type' => $task->source_type,
+            'care_plan_id' => $task->care_plan_id,
+            'occurrence_key' => $task->occurrence_key,
+            'overdue' => $overdue,
+        ];
     }
 }

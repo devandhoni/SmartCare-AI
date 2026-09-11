@@ -4,67 +4,50 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ResidentAdmission extends Model
+class ResidentMedication extends Model
 {
+    protected $table = 'resident_medications';
+
+    const CREATED_AT = 'created_on';
+    const UPDATED_AT = 'updated_on';
+
     protected $fillable = [
         'resident_id',
-        'admission_number',
-        'admitted_at',
-        'admission_type',
-        'admission_source',
-        'reason_for_admission',
-        'medical_summary',
-        'mobility_notes',
-        'dietary_notes',
-        'special_care_instructions',
-        'belongings_notes',
-        'status',
-        'completed_at',
-        'admitted_by',
-        'completed_by',
+        'medication_id',
+        'dosage_instruction',
+        'dosage_quantity',
+        'frequency',
+        'time_slot',
+        'scheduled_time',
+        'start_date',
+        'end_date',
+        'prescribed_by',
     ];
 
     protected $casts = [
-        'admitted_at' => 'datetime',
-        'completed_at' => 'datetime',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     public function resident()
     {
-        return $this->belongsTo(Resident::class);
-    }
-
-    public function admittedBy()
-    {
-        return $this->belongsTo(User::class, 'admitted_by');
-    }
-
-    public function completedBy()
-    {
-        return $this->belongsTo(User::class, 'completed_by');
-    }
-
-    public function consent()
-    {
-        return $this->hasOne(
-            ResidentAdmissionConsent::class,
-            'resident_admission_id'
+        return $this->belongsTo(
+            Resident::class
         );
     }
 
-    public function medicalHistory()
+    public function medication()
     {
-        return $this->hasOne(
-            ResidentAdmissionMedicalHistory::class,
-            'resident_admission_id'
+        return $this->belongsTo(
+            Medication::class
         );
     }
 
-    public function hospitalizations()
+    public function administrationRecords()
     {
         return $this->hasMany(
-            ResidentAdmissionHospitalization::class,
-            'resident_admission_id'
+            MedicationAdministrationRecord::class,
+            'resident_medication_id'
         );
     }
 }

@@ -728,6 +728,15 @@ Route::get(
         );
 
 
+        Route::put(
+            '/medication-administration/{id}/meal-confirmation',
+            [
+                MedicationAdministrationController::class,
+                'confirmMeal'
+            ]
+        );
+
+
 
         Route::post(
             '/residents/{id}/other-medication',
