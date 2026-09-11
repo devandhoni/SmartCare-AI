@@ -23,6 +23,12 @@ const menuSections = [
                 roles: ["Administrator", "Nurse"],
             },
             {
+                name: "Family Messages",
+                path: "/family-messages",
+                icon: "💬",
+                roles: ["Administrator", "Nurse"],
+            },
+            {
                 name: "Nurse Tasks",
                 path: "/tasks",
                 icon: "✅",

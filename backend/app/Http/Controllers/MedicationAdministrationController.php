@@ -11,6 +11,7 @@ use App\Models\NurseTask;
 use App\Models\Resident;
 use App\Models\ResidentMedication;
 use App\Services\ClinicalTimelineService;
+use App\Services\FamilyNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -133,7 +134,8 @@ class MedicationAdministrationController extends Controller
     public function complete(
         Request $request,
         $id,
-        ClinicalTimelineService $timelineService
+        ClinicalTimelineService $timelineService,
+        FamilyNotificationService $familyNotificationService
     ) {
         $validated = $request->validate([
             'status' =>
@@ -462,6 +464,18 @@ class MedicationAdministrationController extends Controller
 
         $result->load('completedBy');
 
+        $familyNotificationResult = null;
+
+        if (
+            $result->status === 'COMPLETED'
+            && $result->meal_type !== null
+            && (bool) $result->meal_confirmed
+        ) {
+            $familyNotificationResult =
+                $familyNotificationService
+                    ->medicationMealCompleted($result);
+        }
+
         return response()->json([
             'message' =>
                 $this->outcomeMessage($result->status),
@@ -477,6 +491,9 @@ class MedicationAdministrationController extends Controller
                 $result->status === 'COMPLETED'
                 && $result->meal_type !== null
                 && (bool) $result->meal_confirmed,
+
+            'family_notification' =>
+                $familyNotificationResult,
 
             'administration_record' =>
                 $result,
@@ -496,14 +513,15 @@ class MedicationAdministrationController extends Controller
     public function confirmMeal(
         Request $request,
         $id,
-        ClinicalTimelineService $timelineService
+        ClinicalTimelineService $timelineService,
+        FamilyNotificationService $familyNotificationService
     ) {
         $validated = $request->validate([
             'meal_notes' =>
                 'nullable|string|max:2000',
         ]);
 
-        $record = DB::transaction(function () use (
+        $mealResult = DB::transaction(function () use (
             $id,
             $validated,
             $timelineService
@@ -548,7 +566,10 @@ class MedicationAdministrationController extends Controller
             }
 
             if ((bool) $record->meal_confirmed) {
-                return $record;
+                return [
+                    'record' => $record,
+                    'newly_confirmed' => false,
+                ];
             }
 
             $record->update([
@@ -596,8 +617,21 @@ class MedicationAdministrationController extends Controller
                 $record->id
             );
 
-            return $record->fresh();
+            return [
+                'record' => $record->fresh(),
+                'newly_confirmed' => true,
+            ];
         });
+
+        $record = $mealResult['record'];
+
+        $familyNotificationResult = null;
+
+        if ($mealResult['newly_confirmed']) {
+            $familyNotificationResult =
+                $familyNotificationService
+                    ->medicationMealCompleted($record);
+        }
 
         return response()->json([
             'message' =>
@@ -613,6 +647,9 @@ class MedicationAdministrationController extends Controller
             */
             'family_notification_eligible' =>
                 true,
+
+            'family_notification' =>
+                $familyNotificationResult,
 
             'administration_record' =>
                 $record,

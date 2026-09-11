@@ -15,6 +15,7 @@ import Today from "./pages/Today";
 import Residents from "./pages/Residents";
 import ResidentProfile from "./pages/ResidentProfile";
 import Medication from "./pages/Medication";
+import FamilyMessages from "./pages/FamilyMessages";
 import NurseDashboard from "./pages/NurseDashboard";
 import CareRecords from "./pages/CareRecords";
 
@@ -122,6 +123,16 @@ function App() {
                     element={
                         <OperationalPage>
                             <Medication />
+                        </OperationalPage>
+                    }
+                />
+
+
+                <Route
+                    path="/family-messages"
+                    element={
+                        <OperationalPage>
+                            <FamilyMessages />
                         </OperationalPage>
                     }
                 />

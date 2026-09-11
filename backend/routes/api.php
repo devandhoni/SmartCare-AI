@@ -60,6 +60,7 @@ use App\Http\Controllers\ResidentHomeLeaveController;
 use App\Http\Controllers\ResidentVisitorController;
 use App\Http\Controllers\WeeklyVitalCheckController;
 use App\Http\Controllers\TodayController;
+use App\Http\Controllers\FamilyMessageLogController;
 use App\Http\Controllers\ResidentCarePlanController;
 
 
@@ -188,6 +189,23 @@ Route::middleware([
 ])
 ->group(function(){
 
+
+
+/*
+|--------------------------------------------------------------------------
+| Family Communication / WhatsApp Audit
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/family-messages',
+    [FamilyMessageLogController::class, 'index']
+);
+
+Route::post(
+    '/family-messages/{id}/retry',
+    [FamilyMessageLogController::class, 'retry']
+);
 
 /*
 |--------------------------------------------------------------------------
