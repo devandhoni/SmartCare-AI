@@ -62,6 +62,11 @@ function Today() {
         [homeLeave]
     );
 
+    const medicationAttention =
+        (summary.medication_overdue ?? 0) +
+        (summary.medication_exceptions ?? 0) +
+        (summary.medication_meals_pending ?? 0);
+
     if (loading) {
         return (
             <div className="flex min-h-[420px] items-center justify-center">
@@ -126,7 +131,7 @@ function Today() {
                 </div>
             )}
 
-            <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <section className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
                 <SummaryCard
                     label="Active Residents"
                     value={summary.active_residents ?? 0}
@@ -156,6 +161,19 @@ function Today() {
                             : `${summary.due_care_tasks ?? 0} due today`
                     }
                     attention={(summary.overdue_care_tasks ?? 0) > 0}
+                />
+
+                <SummaryCard
+                    label="Medication"
+                    value={summary.medication_scheduled ?? 0}
+                    description={
+                        (summary.medication_overdue ?? 0) > 0
+                            ? `${summary.medication_overdue} overdue`
+                            : (summary.medication_meals_pending ?? 0) > 0
+                              ? `${summary.medication_meals_pending} meal confirmation pending`
+                              : `${summary.medication_completed ?? 0} administered`
+                    }
+                    attention={medicationAttention > 0}
                 />
 
                 <SummaryCard
@@ -201,18 +219,21 @@ function Today() {
                                 meal="Breakfast"
                                 round={medicationRounds.AM}
                                 onResident={(id) => navigate(`/residents/${id}`)}
+                                onOpenMedication={() => navigate("/medication")}
                             />
                             <MedicationRound
                                 title="PM"
                                 meal="Lunch"
                                 round={medicationRounds.PM}
                                 onResident={(id) => navigate(`/residents/${id}`)}
+                                onOpenMedication={() => navigate("/medication")}
                             />
                             <MedicationRound
                                 title="Night"
                                 meal="Dinner"
                                 round={medicationRounds.NIGHT}
                                 onResident={(id) => navigate(`/residents/${id}`)}
+                                onOpenMedication={() => navigate("/medication")}
                             />
                         </div>
                     </Panel>
@@ -386,6 +407,7 @@ function Today() {
                     <Panel title="Quick Actions" description="Open common daily care workflows.">
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                             <QuickAction title="Residents" description="Open resident profiles" onClick={() => navigate("/residents")} />
+                            <QuickAction title="Medication Rounds" description={`${summary.medication_pending ?? 0} pending today`} onClick={() => navigate("/medication")} />
                             <QuickAction title="Nurse Tasks" description="Review pending work" onClick={() => navigate("/tasks")} />
                             <QuickAction title="Weekly Vitals" description={`${weeklyVitals.length} due`} onClick={() => navigate("/weekly-vitals")} />
                             <QuickAction title="Monthly Glucose" description={`${monthlyGlucose.length} due`} onClick={() => navigate("/monthly-glucose")} />
@@ -424,46 +446,143 @@ function Panel({ title, description, action, children }) {
     );
 }
 
-function MedicationRound({ title, meal, round, onResident }) {
+function MedicationRound({ title, meal, round, onResident, onOpenMedication }) {
     const items = round?.items ?? [];
-    const completed = items.filter((item) => String(item.status).toUpperCase() === "COMPLETED").length;
+    const completed = round?.completed ?? items.filter(
+        (item) => String(item.status).toUpperCase() === "COMPLETED"
+    ).length;
+    const overdue = round?.overdue ?? items.filter((item) => item.overdue).length;
+    const exceptions = round?.exceptions ?? items.filter((item) =>
+        ["HELD", "REFUSED", "UNAVAILABLE", "MISSED"].includes(
+            String(item.status).toUpperCase()
+        )
+    ).length;
+    const mealsPending = round?.meals_pending ?? items.filter(
+        (item) =>
+            String(item.status).toUpperCase() === "COMPLETED" &&
+            item.meal_type &&
+            !item.meal_confirmed
+    ).length;
 
     return (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className={`rounded-xl border p-4 ${
+            overdue > 0 || exceptions > 0
+                ? "border-red-200 bg-red-50"
+                : mealsPending > 0
+                  ? "border-amber-200 bg-amber-50"
+                  : "border-slate-200 bg-slate-50"
+        }`}>
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <p className="font-bold text-slate-900">{title}</p>
                     <p className="text-xs text-slate-500">{meal}</p>
                 </div>
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">{completed}/{items.length}</span>
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                    {completed}/{items.length}
+                </span>
             </div>
+
+            {(overdue > 0 || exceptions > 0 || mealsPending > 0) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                    {overdue > 0 && (
+                        <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
+                            {overdue} overdue
+                        </span>
+                    )}
+                    {exceptions > 0 && (
+                        <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700">
+                            {exceptions} exception{exceptions === 1 ? "" : "s"}
+                        </span>
+                    )}
+                    {mealsPending > 0 && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">
+                            {mealsPending} meal pending
+                        </span>
+                    )}
+                </div>
+            )}
 
             {items.length === 0 ? (
                 <p className="mt-5 text-sm text-slate-400">No medication scheduled.</p>
             ) : (
                 <div className="mt-4 space-y-2">
                     {items.slice(0, 5).map((item) => (
-                        <button
-                            type="button"
+                        <div
                             key={item.resident_medication_id}
-                            onClick={() => onResident(item.resident_id)}
-                            className="w-full rounded-lg bg-white p-3 text-left shadow-sm transition hover:bg-slate-100"
+                            className="rounded-lg border border-slate-100 bg-white p-3 shadow-sm"
                         >
-                            <div className="flex items-center justify-between gap-2">
-                                <p className="truncate text-sm font-semibold text-slate-800">{item.resident}</p>
-                                <span className={`text-xs font-semibold ${String(item.status).toUpperCase() === "COMPLETED" ? "text-emerald-700" : "text-amber-700"}`}>
-                                    {String(item.status).toUpperCase() === "COMPLETED" ? "Done" : "Pending"}
-                                </span>
+                            <div className="flex items-start justify-between gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onResident(item.resident_id)}
+                                    className="min-w-0 text-left"
+                                >
+                                    <p className="truncate text-sm font-semibold text-slate-800 hover:underline">
+                                        {item.resident}
+                                    </p>
+                                    <p className="mt-1 truncate text-xs text-slate-500">
+                                        {item.medicine}
+                                        {item.scheduled_time ? ` • ${formatMedicationTime(item.scheduled_time)}` : ""}
+                                    </p>
+                                </button>
+
+                                <MedicationStatusBadge item={item} />
                             </div>
-                            <p className="mt-1 truncate text-xs text-slate-500">
-                                {item.medicine}{item.scheduled_time ? ` • ${formatMedicationTime(item.scheduled_time)}` : ""}
-                            </p>
-                        </button>
+
+                            {item.remarks && (
+                                <p className="mt-2 text-xs leading-5 text-slate-500">
+                                    {item.remarks}
+                                </p>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={onOpenMedication}
+                                className="mt-3 text-xs font-semibold text-blue-700 hover:underline"
+                            >
+                                Open Medication →
+                            </button>
+                        </div>
                     ))}
-                    {items.length > 5 && <p className="pt-1 text-xs font-medium text-slate-500">+{items.length - 5} more scheduled</p>}
+
+                    {items.length > 5 && (
+                        <p className="pt-1 text-xs font-medium text-slate-500">
+                            +{items.length - 5} more scheduled
+                        </p>
+                    )}
                 </div>
             )}
         </div>
+    );
+}
+
+function MedicationStatusBadge({ item }) {
+    const status = String(item.status || "PENDING").toUpperCase();
+
+    let text = "Pending";
+    let classes = "bg-amber-100 text-amber-800";
+
+    if (item.overdue && ["PENDING", "DELAYED"].includes(status)) {
+        text = "Overdue";
+        classes = "bg-red-100 text-red-700";
+    } else if (status === "COMPLETED" && item.meal_type && !item.meal_confirmed) {
+        text = `Awaiting ${item.meal_type}`;
+        classes = "bg-amber-100 text-amber-800";
+    } else if (status === "COMPLETED") {
+        text = "Complete";
+        classes = "bg-emerald-100 text-emerald-700";
+    } else if (status === "DELAYED") {
+        text = "Delayed";
+        classes = "bg-amber-100 text-amber-800";
+    } else if (["HELD", "REFUSED", "UNAVAILABLE", "MISSED"].includes(status)) {
+        text = status.charAt(0) + status.slice(1).toLowerCase();
+        classes = "bg-red-100 text-red-700";
+    }
+
+    return (
+        <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${classes}`}>
+            {text}
+        </span>
     );
 }
 
