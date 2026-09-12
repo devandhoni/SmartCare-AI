@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\MedicineInventory;
 use App\Models\MedicineTransaction;
+use App\Services\InventoryAlertService;
+use App\Services\InventoryExpiryAlertService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -34,8 +36,11 @@ class MedicineInventoryController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function store(Request $request)
-    {
+    public function store(
+        Request $request,
+        InventoryAlertService $inventoryAlertService,
+        InventoryExpiryAlertService $inventoryExpiryAlertService
+    ) {
         $validated = $request->validate([
             'medication_id' =>
                 'required|exists:medications,id',
@@ -66,7 +71,11 @@ class MedicineInventoryController extends Controller
         }
 
         $inventory = DB::transaction(
-            function () use ($validated) {
+            function () use (
+                $validated,
+                $inventoryAlertService,
+                $inventoryExpiryAlertService
+            ) {
                 $inventory =
                     MedicineInventory::create([
                         'medication_id' =>
@@ -77,7 +86,7 @@ class MedicineInventoryController extends Controller
 
                         'minimum_stock' =>
                             $validated['minimum_stock']
-                            ?? 0,
+                            ?? 10,
 
                         'expiry_date' =>
                             $validated['expiry_date']
@@ -87,18 +96,6 @@ class MedicineInventoryController extends Controller
                             $validated['location']
                             ?? null,
                     ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | Initial Stock Transaction
-                |--------------------------------------------------------------------------
-                |
-                | Existing database allows only:
-                |
-                | IN
-                | OUT
-                |
-                */
 
                 if (
                     (int) $validated['quantity']
@@ -127,6 +124,16 @@ class MedicineInventoryController extends Controller
                             now(),
                     ]);
                 }
+
+                $inventory->load('medication');
+
+                $inventoryAlertService->reconcile(
+                    $inventory
+                );
+
+                $inventoryExpiryAlertService->reconcile(
+                    $inventory
+                );
 
                 return $inventory;
             }
@@ -157,13 +164,10 @@ class MedicineInventoryController extends Controller
 
     public function update(
         Request $request,
-        $id
+        $id,
+        InventoryAlertService $inventoryAlertService,
+        InventoryExpiryAlertService $inventoryExpiryAlertService
     ) {
-        $inventory =
-            MedicineInventory::findOrFail(
-                $id
-            );
-
         $validated =
             $request->validate([
                 'minimum_stock' =>
@@ -176,12 +180,41 @@ class MedicineInventoryController extends Controller
                     'nullable|string|max:255',
             ]);
 
-        $inventory->update(
-            $validated
-        );
+        $inventory = DB::transaction(
+            function () use (
+                $id,
+                $validated,
+                $inventoryAlertService,
+                $inventoryExpiryAlertService
+            ) {
+                $inventory =
+                    MedicineInventory::where(
+                        'id',
+                        $id
+                    )
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-        $inventory->load(
-            'medication'
+                $inventory->update(
+                    $validated
+                );
+
+                $inventory->load(
+                    'medication'
+                );
+
+                $inventoryAlertService->reconcile(
+                    $inventory
+                );
+
+                $inventoryExpiryAlertService->reconcile(
+                    $inventory
+                );
+
+                return $inventory->fresh(
+                    'medication'
+                );
+            }
         );
 
         return response()->json([
@@ -201,7 +234,9 @@ class MedicineInventoryController extends Controller
 
     public function stockAdjustment(
         Request $request,
-        $id
+        $id,
+        InventoryAlertService $inventoryAlertService,
+        InventoryExpiryAlertService $inventoryExpiryAlertService
     ) {
         $validated =
             $request->validate([
@@ -218,7 +253,9 @@ class MedicineInventoryController extends Controller
         $result = DB::transaction(
             function () use (
                 $id,
-                $validated
+                $validated,
+                $inventoryAlertService,
+                $inventoryExpiryAlertService
             ) {
                 $inventory =
                     MedicineInventory::where(
@@ -230,12 +267,6 @@ class MedicineInventoryController extends Controller
 
                 $quantity =
                     (int) $validated['quantity'];
-
-                /*
-                |--------------------------------------------------------------------------
-                | Map UI Transaction Type to Existing Database ENUM
-                |--------------------------------------------------------------------------
-                */
 
                 $isOutgoing =
                     in_array(
@@ -254,12 +285,6 @@ class MedicineInventoryController extends Controller
                         ? 'OUT'
                         : 'IN';
 
-                /*
-                |--------------------------------------------------------------------------
-                | Prevent Negative Inventory
-                |--------------------------------------------------------------------------
-                */
-
                 if (
                     $isOutgoing
                     &&
@@ -272,12 +297,6 @@ class MedicineInventoryController extends Controller
                     );
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Update Stock Quantity
-                |--------------------------------------------------------------------------
-                */
-
                 if ($isOutgoing) {
                     $inventory->quantity =
                         (int) $inventory->quantity
@@ -289,16 +308,6 @@ class MedicineInventoryController extends Controller
                 }
 
                 $inventory->save();
-
-                /*
-                |--------------------------------------------------------------------------
-                | Transaction Reference
-                |--------------------------------------------------------------------------
-                |
-                | Database keeps IN / OUT.
-                | Reference keeps the more detailed operation type.
-                |
-                */
 
                 $operationLabel =
                     match (
@@ -335,12 +344,6 @@ class MedicineInventoryController extends Controller
                         $validated['reference'];
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Create Transaction
-                |--------------------------------------------------------------------------
-                */
-
                 $transaction =
                     MedicineTransaction::create([
                         'medication_id' =>
@@ -369,12 +372,28 @@ class MedicineInventoryController extends Controller
                     'medication'
                 );
 
+                $alertResult =
+                    $inventoryAlertService->reconcile(
+                        $inventory
+                    );
+
+                $expiryAlertResult =
+                    $inventoryExpiryAlertService->reconcile(
+                        $inventory
+                    );
+
                 return [
                     'inventory' =>
-                        $inventory,
+                        $inventory->fresh('medication'),
 
                     'transaction' =>
                         $transaction,
+
+                    'inventory_alert' =>
+                        $alertResult,
+
+                    'expiry_alert' =>
+                        $expiryAlertResult,
                 ];
             }
         );
@@ -388,6 +407,12 @@ class MedicineInventoryController extends Controller
 
             'transaction' =>
                 $result['transaction'],
+
+            'inventory_alert' =>
+                $result['inventory_alert'],
+
+            'expiry_alert' =>
+                $result['expiry_alert'],
         ]);
     }
 

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AiAlert;
 use App\Models\ClinicalTimeline;
 use App\Models\MedicationAdministrationRecord;
 use App\Models\MedicineInventory;
@@ -12,6 +11,7 @@ use App\Models\Resident;
 use App\Models\ResidentMedication;
 use App\Services\ClinicalTimelineService;
 use App\Services\FamilyNotificationService;
+use App\Services\InventoryAlertService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -135,7 +135,8 @@ class MedicationAdministrationController extends Controller
         Request $request,
         $id,
         ClinicalTimelineService $timelineService,
-        FamilyNotificationService $familyNotificationService
+        FamilyNotificationService $familyNotificationService,
+        InventoryAlertService $inventoryAlertService
     ) {
         $validated = $request->validate([
             'status' =>
@@ -174,7 +175,8 @@ class MedicationAdministrationController extends Controller
             $validated,
             $status,
             $remarks,
-            $timelineService
+            $timelineService,
+            $inventoryAlertService
         ) {
             $residentMedication = ResidentMedication::whereKey($id)
                 ->lockForUpdate()
@@ -274,6 +276,16 @@ class MedicationAdministrationController extends Controller
                     )
                     ->lockForUpdate()
                     ->first();
+
+                if (
+                    $inventory
+                    && $inventory->isExpired()
+                ) {
+                    abort(
+                        422,
+                        'Medicine stock has expired and cannot be administered.'
+                    );
+                }
 
                 if (
                     $inventory
@@ -378,8 +390,7 @@ class MedicationAdministrationController extends Controller
                             now(),
                     ]);
 
-                    $this->createLowStockAlertIfNeeded(
-                        $residentMedication,
+                    $inventoryAlertService->reconcile(
                         $inventory
                     );
                 }
@@ -945,80 +956,4 @@ class MedicationAdministrationController extends Controller
         ]);
     }
 
-    private function createLowStockAlertIfNeeded(
-        ResidentMedication $residentMedication,
-        MedicineInventory $inventory
-    ): void {
-        if (
-            (int) $inventory->quantity
-            > (int) $inventory->minimum_stock
-        ) {
-            return;
-        }
-
-        $medicineName =
-            $residentMedication->medication?->medicine_name
-            ?? 'Medicine';
-
-        $existingAlert = AiAlert::where(
-                'alert_type',
-                'MEDICINE LOW STOCK'
-            )
-            ->where('status', 'OPEN')
-            ->where(
-                'resident_id',
-                $residentMedication->resident_id
-            )
-            ->where(
-                'message',
-                'like',
-                $medicineName . ' stock is low.%'
-            )
-            ->first();
-
-        $message =
-            $medicineName
-            . ' stock is low. Current stock: '
-            . $inventory->quantity
-            . ' units.';
-
-        if ($existingAlert) {
-            /*
-            | Keep one OPEN alert per resident + medicine, but refresh its
-            | message so staff always see the current stock quantity.
-            */
-            $existingAlert->update([
-                'severity' =>
-                    'WARNING',
-
-                'message' =>
-                    $message,
-
-                'ai_confidence' =>
-                    100,
-            ]);
-
-            return;
-        }
-
-        AiAlert::create([
-            'resident_id' =>
-                $residentMedication->resident_id,
-
-            'alert_type' =>
-                'MEDICINE LOW STOCK',
-
-            'severity' =>
-                'WARNING',
-
-            'message' =>
-                $message,
-
-            'ai_confidence' =>
-                100,
-
-            'status' =>
-                'OPEN',
-        ]);
-    }
 }

@@ -29,6 +29,7 @@ function Inventory() {
     const [inventory, setInventory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [stockFilter, setStockFilter] = useState("ALL");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
@@ -101,22 +102,33 @@ function Inventory() {
 
     const filteredInventory = useMemo(() => {
         const term = search.trim().toLowerCase();
-        if (!term) return inventory;
 
-        return inventory.filter((item) =>
-            [
+        return inventory.filter((item) => {
+            const status = String(item.stock_status || "").toUpperCase();
+            const matchesFilter =
+                stockFilter === "ALL"
+                    ? true
+                    : stockFilter === "NEEDS_ATTENTION"
+                      ? Boolean(item.needs_attention)
+                      : status === stockFilter;
+
+            if (!matchesFilter) return false;
+            if (!term) return true;
+
+            return [
                 item.medication?.medicine_name,
                 item.medication?.category,
                 item.medication?.dosage,
                 item.medication?.unit,
                 item.location,
+                status.replaceAll("_", " "),
             ]
                 .filter(Boolean)
                 .join(" ")
                 .toLowerCase()
-                .includes(term)
-        );
-    }, [inventory, search]);
+                .includes(term);
+        });
+    }, [inventory, search, stockFilter]);
 
     const medicinesWithoutInventory = useMemo(() => {
         const inventoryMedicationIds = new Set(
@@ -129,11 +141,23 @@ function Inventory() {
     }, [medications, inventory]);
 
     const lowStockCount = inventory.filter(
-        (item) => Number(item.quantity) <= Number(item.minimum_stock)
+        (item) => String(item.stock_status || "").toUpperCase() === "LOW_STOCK"
     ).length;
 
-    const expiringCount = inventory.filter((item) =>
-        isExpiringSoon(item.expiry_date)
+    const outOfStockCount = inventory.filter(
+        (item) => String(item.stock_status || "").toUpperCase() === "OUT_OF_STOCK"
+    ).length;
+
+    const expiringCount = inventory.filter(
+        (item) => String(item.stock_status || "").toUpperCase() === "EXPIRING_SOON"
+    ).length;
+
+    const expiredCount = inventory.filter(
+        (item) => String(item.stock_status || "").toUpperCase() === "EXPIRED"
+    ).length;
+
+    const needsAttentionCount = inventory.filter(
+        (item) => Boolean(item.needs_attention)
     ).length;
 
     const clearMessages = () => {
@@ -261,7 +285,7 @@ function Inventory() {
                             : Number(inventoryForm.quantity),
                     minimum_stock:
                         inventoryForm.minimum_stock === ""
-                            ? 0
+                            ? 10
                             : Number(inventoryForm.minimum_stock),
                     expiry_date: emptyToNull(inventoryForm.expiry_date),
                     location: emptyToNull(inventoryForm.location),
@@ -347,10 +371,12 @@ function Inventory() {
                     </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 sm:min-w-[430px]">
+                <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 xl:w-auto xl:min-w-[650px] xl:grid-cols-5">
                     <Metric label="Medicines" value={medications.length} />
+                    <Metric label="Needs Attention" value={needsAttentionCount} tone={needsAttentionCount ? "danger" : "normal"} />
                     <Metric label="Low Stock" value={lowStockCount} tone={lowStockCount ? "warning" : "normal"} />
-                    <Metric label="Expiring" value={expiringCount} tone={expiringCount ? "warning" : "normal"} />
+                    <Metric label="Out of Stock" value={outOfStockCount} tone={outOfStockCount ? "danger" : "normal"} />
+                    <Metric label="Expiry Issues" value={expiringCount + expiredCount} tone={expiringCount + expiredCount ? "warning" : "normal"} />
                 </div>
             </div>
 
@@ -374,6 +400,7 @@ function Inventory() {
                             onClick={() => {
                                 setTab("medicines");
                                 setSearch("");
+                                setStockFilter("ALL");
                             }}
                         >
                             Medicine Master
@@ -383,6 +410,7 @@ function Inventory() {
                             onClick={() => {
                                 setTab("stock");
                                 setSearch("");
+                                setStockFilter("ALL");
                             }}
                         >
                             Stock
@@ -415,6 +443,31 @@ function Inventory() {
                         )}
                     </div>
                 </div>
+
+                {tab === "stock" && !loading && (
+                    <div className="border-b border-slate-200 px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                            <StockFilterButton active={stockFilter === "ALL"} onClick={() => setStockFilter("ALL")}>
+                                All ({inventory.length})
+                            </StockFilterButton>
+                            <StockFilterButton active={stockFilter === "NEEDS_ATTENTION"} onClick={() => setStockFilter("NEEDS_ATTENTION")} tone="danger">
+                                Needs Attention ({needsAttentionCount})
+                            </StockFilterButton>
+                            <StockFilterButton active={stockFilter === "LOW_STOCK"} onClick={() => setStockFilter("LOW_STOCK")} tone="warning">
+                                Low Stock ({lowStockCount})
+                            </StockFilterButton>
+                            <StockFilterButton active={stockFilter === "OUT_OF_STOCK"} onClick={() => setStockFilter("OUT_OF_STOCK")} tone="danger">
+                                Out of Stock ({outOfStockCount})
+                            </StockFilterButton>
+                            <StockFilterButton active={stockFilter === "EXPIRING_SOON"} onClick={() => setStockFilter("EXPIRING_SOON")} tone="warning">
+                                Expiring Soon ({expiringCount})
+                            </StockFilterButton>
+                            <StockFilterButton active={stockFilter === "EXPIRED"} onClick={() => setStockFilter("EXPIRED")} tone="danger">
+                                Expired ({expiredCount})
+                            </StockFilterButton>
+                        </div>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="p-10 text-center text-sm text-slate-500">
@@ -558,7 +611,7 @@ function Inventory() {
                                     label="Opening Quantity"
                                     type="number"
                                     min="0"
-                                    step="0.01"
+                                    step="1"
                                     required
                                     value={inventoryForm.quantity}
                                     onChange={(value) =>
@@ -575,7 +628,7 @@ function Inventory() {
                                 label="Minimum Stock"
                                 type="number"
                                 min="0"
-                                step="0.01"
+                                step="1"
                                 value={inventoryForm.minimum_stock}
                                 onChange={(value) =>
                                     setInventoryForm((current) => ({
@@ -648,8 +701,8 @@ function Inventory() {
                         <Field
                             label="Quantity"
                             type="number"
-                            min="0.01"
-                            step="0.01"
+                            min="1"
+                            step="1"
                             required
                             value={adjustmentForm.quantity}
                             onChange={(value) =>
@@ -931,8 +984,8 @@ function StockTable({ inventory, onEdit, onAdjust, onTransactions }) {
     if (inventory.length === 0) {
         return (
             <EmptyState
-                title="No stock records found"
-                description="Create a stock record for a medicine from the Medicine Master catalogue."
+                title="No matching stock records"
+                description="No medicine stock matches the current search or attention filter."
             />
         );
     }
@@ -1043,6 +1096,30 @@ function StockTable({ inventory, onEdit, onAdjust, onTransactions }) {
 }
 
 
+function StockFilterButton({ active, onClick, children, tone = "normal" }) {
+    const activeClass =
+        tone === "danger"
+            ? "border-red-300 bg-red-100 text-red-700"
+            : tone === "warning"
+              ? "border-amber-300 bg-amber-100 text-amber-700"
+              : "border-blue-300 bg-blue-50 text-blue-700";
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                active
+                    ? activeClass
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+        >
+            {children}
+        </button>
+    );
+}
+
+
 function InventoryInfo({ label, value }) {
     return (
         <div className="rounded-xl bg-slate-50 p-3">
@@ -1058,14 +1135,15 @@ function InventoryInfo({ label, value }) {
 
 
 function Metric({ label, value, tone = "normal" }) {
+    const toneClass =
+        tone === "danger"
+            ? "border-red-200 bg-red-50"
+            : tone === "warning"
+              ? "border-amber-200 bg-amber-50"
+              : "border-slate-200 bg-white";
+
     return (
-        <div
-            className={`rounded-xl border px-3 py-3 text-center ${
-                tone === "warning"
-                    ? "border-amber-200 bg-amber-50"
-                    : "border-slate-200 bg-white"
-            }`}
-        >
+        <div className={`rounded-xl border px-3 py-3 text-center ${toneClass}`}>
             <div className="text-xl font-bold text-slate-800">{value}</div>
             <div className="mt-0.5 text-xs font-semibold text-slate-500">{label}</div>
         </div>
@@ -1218,12 +1296,9 @@ function EmptyState({ title, description }) {
 }
 
 function StockBadge({ item }) {
-    const quantity = Number(item.quantity);
-    const minimum = Number(item.minimum_stock);
-    const expired = isExpired(item.expiry_date);
-    const expiring = isExpiringSoon(item.expiry_date);
+    const status = String(item.stock_status || "").toUpperCase();
 
-    if (expired) {
+    if (status === "EXPIRED") {
         return (
             <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
                 Expired
@@ -1231,7 +1306,15 @@ function StockBadge({ item }) {
         );
     }
 
-    if (quantity <= minimum) {
+    if (status === "OUT_OF_STOCK") {
+        return (
+            <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
+                Out of stock
+            </span>
+        );
+    }
+
+    if (status === "LOW_STOCK") {
         return (
             <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
                 Low stock
@@ -1239,7 +1322,7 @@ function StockBadge({ item }) {
         );
     }
 
-    if (expiring) {
+    if (status === "EXPIRING_SOON") {
         return (
             <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700">
                 Expiring soon
@@ -1299,21 +1382,6 @@ function formatDateTime(value) {
         : date.toLocaleString();
 }
 
-function isExpired(value) {
-    if (!value) return false;
-    const expiry = new Date(`${String(value).slice(0, 10)}T23:59:59`);
-    return expiry < new Date();
-}
-
-function isExpiringSoon(value) {
-    if (!value || isExpired(value)) return false;
-
-    const expiry = new Date(`${String(value).slice(0, 10)}T23:59:59`);
-    const now = new Date();
-    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-
-    return expiry.getTime() - now.getTime() <= thirtyDays;
-}
 
 function emptyToNull(value) {
     if (value === undefined || value === null) return null;

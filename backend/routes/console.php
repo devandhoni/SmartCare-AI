@@ -31,3 +31,11 @@ Schedule::command(
 ->dailyAt('23:55')
 ->withoutOverlapping()
 ->onOneServer();
+
+
+Schedule::command(
+    'inventory:reconcile-expiry'
+)
+->dailyAt('08:00')
+->withoutOverlapping()
+->onOneServer();
