@@ -62,7 +62,7 @@ use App\Http\Controllers\WeeklyVitalCheckController;
 use App\Http\Controllers\TodayController;
 use App\Http\Controllers\FamilyMessageLogController;
 use App\Http\Controllers\ResidentCarePlanController;
-
+use App\Http\Controllers\ResidentBillingController;
 
 
 /*
@@ -256,11 +256,48 @@ Route::get(
 
 /*
 |--------------------------------------------------------------------------
-| Residents
+| Resident Billing Controller
 |--------------------------------------------------------------------------
 */
 
 
+Route::get(
+    '/residents/{residentId}/billing/fee-status',
+    [ResidentBillingController::class, 'feeStatus']
+);
+
+
+
+Route::post(
+    '/residents/{residentId}/billing/invoices/monthly',
+    [ResidentBillingController::class, 'generateMonthlyInvoice']
+);
+
+
+Route::get(
+    '/residents/{residentId}/billing/invoices',
+    [ResidentBillingController::class, 'residentInvoices']
+);
+
+Route::get(
+    '/billing/invoices/{invoiceId}',
+    [ResidentBillingController::class, 'showInvoice']
+);
+
+Route::post(
+    '/billing/invoices/{invoiceId}/payments',
+    [ResidentBillingController::class, 'recordPayment']
+);
+
+Route::get(
+    '/billing/payments/{paymentId}/receipt',
+    [ResidentBillingController::class, 'paymentReceipt']
+);
+
+Route::get(
+    '/billing/payments/{paymentId}/receipt/pdf',
+    [ResidentBillingController::class, 'paymentReceiptPdf']
+);
 
 /*
 |--------------------------------------------------------------------------

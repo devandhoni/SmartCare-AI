@@ -33,6 +33,7 @@ import AIIntelligence from "./pages/AIIntelligence";
 import AdminDashboard from "./pages/AdminDashboard";
 
 import ClinicalDashboard from "./components/clinical/ClinicalDashboard";
+import Billing from "./pages/Billing";
 
 
 const OPERATIONAL_ROLES = [
@@ -262,7 +263,17 @@ function App() {
                         </AdministratorPage>
                     }
                 />
+
+                <Route
+                    path="/billing"
+                    element={
+                        <OperationalPage>
+                            <Billing />
+                        </OperationalPage>
+                    }
+                />
             </Routes>
+
         </BrowserRouter>
     );
 }

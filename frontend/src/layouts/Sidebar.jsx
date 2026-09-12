@@ -59,6 +59,12 @@ const menuSections = [
                 roles: ["Administrator", "Nurse"],
             },
             {
+                name: "Billing",
+                path: "/billing",
+                icon: "RM",
+                roles: ["Administrator", "Nurse"],
+            },
+            {
                 name: "Monthly Glucose",
                 path: "/monthly-glucose",
                 icon: "🩸",

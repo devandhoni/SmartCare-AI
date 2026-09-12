@@ -71,7 +71,7 @@ class ClinicalTimelineService
             ClinicalEventType::NURSE_ACTION,
             ClinicalEventType::DOCTOR_REVIEW,
 
-
+            ClinicalEventType::BILLING,
             ClinicalEventType::DOCUMENT_UPLOAD
 
         ];
@@ -571,7 +571,50 @@ class ClinicalTimelineService
 
 
 
+/*
+|--------------------------------------------------------------------------
+| Billing Invoice Generated
+|--------------------------------------------------------------------------
+*/
 
+public function recordBillingInvoiceGenerated(
+    $residentId,
+    $invoiceNumber,
+    $billingPeriodLabel,
+    $sourceId = null
+) {
+    return $this->record(
+        $residentId,
+        ClinicalEventType::BILLING,
+        "Billing Invoice Generated",
+        "Monthly billing invoice {$invoiceNumber} was generated for {$billingPeriodLabel}.",
+        "BillingInvoiceGenerated",
+        $sourceId
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Billing Payment Recorded
+|--------------------------------------------------------------------------
+*/
+
+public function recordBillingPaymentRecorded(
+    $residentId,
+    $paymentReference,
+    $invoiceNumber,
+    $sourceId = null
+) {
+    return $this->record(
+        $residentId,
+        ClinicalEventType::BILLING,
+        "Billing Payment Recorded",
+        "Payment {$paymentReference} was recorded against invoice {$invoiceNumber}.",
+        "BillingPaymentRecorded",
+        $sourceId
+    );
+}
 
 
 
