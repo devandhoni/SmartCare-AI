@@ -63,6 +63,7 @@ use App\Http\Controllers\TodayController;
 use App\Http\Controllers\FamilyMessageLogController;
 use App\Http\Controllers\ResidentCarePlanController;
 use App\Http\Controllers\ResidentBillingController;
+use App\Http\Controllers\ReportController;
 
 
 /*
@@ -174,6 +175,123 @@ Route::get(
 Route::get(
     '/nurse/dashboard/{residentId}',
     [NurseDashboardController::class,'residentDashboard']
+);
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Management Reports
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/overview',
+    [
+        ReportController::class,
+        'overview'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/resident-census',
+    [
+        ReportController::class,
+        'residentCensus'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/care-operations',
+    [
+        ReportController::class,
+        'careOperations'
+    ]
+);
+
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/medication-operations',
+    [
+        ReportController::class,
+        'medicationOperations'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/clinical-monitoring',
+    [
+        ReportController::class,
+        'clinicalMonitoring'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/inventory-operations',
+    [
+        ReportController::class,
+        'inventoryOperations'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/billing-operations',
+    [
+        ReportController::class,
+        'billingOperations'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/family-facility',
+    [
+        ReportController::class,
+        'familyFacilityOperations'
+    ]
+);
+
+Route::middleware([
+    'auth:sanctum',
+    'role:Administrator'
+])
+->get(
+    '/reports/export',
+    [
+        ReportController::class,
+        'export'
+    ]
 );
 
 /*
@@ -996,9 +1114,6 @@ Route::put(
     ]
 
 );
-
-
-
 
 
 /*
