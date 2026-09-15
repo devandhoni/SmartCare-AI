@@ -404,6 +404,178 @@ function DataTable({
 }
 
 
+function ResidentGroupedTable({
+    title,
+    description,
+    columns,
+    rows,
+    emptyText = "No records were found for this period.",
+}) {
+    const [search, setSearch] = useState("");
+    const [openResidents, setOpenResidents] = useState({});
+
+    const groups = useMemo(() => {
+        const grouped = new Map();
+
+        safeArray(rows).forEach((row) => {
+            const residentName = row?.resident_name || "Unknown Resident";
+
+            if (!grouped.has(residentName)) {
+                grouped.set(residentName, []);
+            }
+
+            grouped.get(residentName).push(row);
+        });
+
+        return Array.from(grouped.entries())
+            .map(([residentName, residentRows]) => ({
+                residentName,
+                rows: residentRows,
+            }))
+            .sort((a, b) =>
+                a.residentName.localeCompare(b.residentName)
+            );
+    }, [rows]);
+
+    const filteredGroups = useMemo(() => {
+        const query = search.trim().toLowerCase();
+
+        if (!query) {
+            return groups;
+        }
+
+        return groups.filter((group) =>
+            group.residentName.toLowerCase().includes(query)
+        );
+    }, [groups, search]);
+
+    const toggleResident = (residentName) => {
+        setOpenResidents((current) => ({
+            ...current,
+            [residentName]: !current[residentName],
+        }));
+    };
+
+    return (
+        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="min-w-0">
+                    <h2 className="text-lg font-bold text-slate-900">
+                        {title}
+                    </h2>
+
+                    {description && (
+                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                            {description}
+                        </p>
+                    )}
+
+                    <p className="mt-1 text-xs font-medium text-slate-400">
+                        {numberText(groups.length)} resident{groups.length === 1 ? "" : "s"} · {numberText(rows.length)} record{rows.length === 1 ? "" : "s"}
+                    </p>
+                </div>
+
+                <div className="w-full lg:w-80">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Find resident
+                    </label>
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Search by resident name"
+                        className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                </div>
+            </div>
+
+            {groups.length === 0 ? (
+                <div className="mt-5 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
+                    <p className="text-sm text-slate-500">{emptyText}</p>
+                </div>
+            ) : filteredGroups.length === 0 ? (
+                <div className="mt-5 rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center">
+                    <p className="text-sm text-slate-500">
+                        No resident matches “{search}”.
+                    </p>
+                </div>
+            ) : (
+                <div className="mt-5 space-y-3">
+                    {filteredGroups.map((group) => {
+                        const isOpen = Boolean(openResidents[group.residentName]);
+
+                        return (
+                            <div
+                                key={group.residentName}
+                                className="overflow-hidden rounded-xl border border-slate-200"
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => toggleResident(group.residentName)}
+                                    className="flex w-full min-w-0 items-center justify-between gap-4 bg-slate-50 px-4 py-3 text-left transition hover:bg-slate-100"
+                                    aria-expanded={isOpen}
+                                >
+                                    <span className="min-w-0">
+                                        <span className="block truncate text-sm font-bold text-slate-900">
+                                            {group.residentName}
+                                        </span>
+                                        <span className="mt-0.5 block text-xs text-slate-500">
+                                            {numberText(group.rows.length)} record{group.rows.length === 1 ? "" : "s"}
+                                        </span>
+                                    </span>
+
+                                    <span className="shrink-0 text-lg font-semibold text-slate-500">
+                                        {isOpen ? "−" : "+"}
+                                    </span>
+                                </button>
+
+                                {isOpen && (
+                                    <div className="max-w-full overflow-x-auto border-t border-slate-200">
+                                        <table className="min-w-full whitespace-nowrap text-left text-sm">
+                                            <thead>
+                                                <tr className="border-b border-slate-200 bg-white">
+                                                    {columns.map((column) => (
+                                                        <th
+                                                            key={column.key}
+                                                            className="px-3 py-3 text-xs font-bold uppercase tracking-wide text-slate-500"
+                                                        >
+                                                            {column.label}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {group.rows.map((row, index) => (
+                                                    <tr
+                                                        key={row.id ?? row.key ?? index}
+                                                        className="border-b border-slate-100 last:border-b-0"
+                                                    >
+                                                        {columns.map((column) => (
+                                                            <td
+                                                                key={column.key}
+                                                                className="max-w-xs px-3 py-3 align-top text-slate-700"
+                                                            >
+                                                                {column.render
+                                                                    ? column.render(row)
+                                                                    : row[column.key] ?? "-"}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </section>
+    );
+}
+
+
 function ResidentCensusReport({
     data,
 }) {
@@ -604,7 +776,7 @@ function CareOperationsReport({
                 />
             </section>
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Routine Care Tasks"
                 description="Existing scheduled routine-care evidence for the selected period."
                 rows={tasks}
@@ -646,7 +818,7 @@ function CareOperationsReport({
                 ]}
             />
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Care Records"
                 rows={careRecords}
                 columns={[
@@ -744,7 +916,7 @@ function MedicationReport({
                 />
             </section>
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Medication Administration"
                 description="Recorded administrations only. This report does not generate due medication occurrences."
                 rows={records}
@@ -855,7 +1027,7 @@ function ClinicalMonitoringReport({
                 />
             </section>
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Weekly Vital Signs"
                 rows={weekly}
                 columns={[
@@ -903,7 +1075,7 @@ function ClinicalMonitoringReport({
                 ]}
             />
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Monthly Glucose Checks"
                 rows={monthly}
                 columns={[
@@ -1151,7 +1323,7 @@ function BillingReport({
                 />
             </section>
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Invoices"
                 rows={invoiceRows}
                 columns={[
@@ -1209,7 +1381,7 @@ function BillingReport({
                 ]}
             />
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Payments Received"
                 rows={paymentRows}
                 columns={[
@@ -1303,7 +1475,7 @@ function FamilyCommunicationReport({
                 />
             </section>
 
-            <DataTable
+            <ResidentGroupedTable
                 title="Family Messages"
                 description="Communication evidence only. Family phone numbers are not displayed."
                 rows={messages}
