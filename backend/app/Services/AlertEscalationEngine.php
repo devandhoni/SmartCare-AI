@@ -2,33 +2,22 @@
 
 namespace App\Services;
 
-
 use App\Models\AiAlert;
-use App\Models\Notification;
 use App\Models\ActivityLog;
 use App\Models\AlertEscalationLog;
 use Carbon\Carbon;
 
-
-
 class AlertEscalationEngine
 {
-
-
     /*
     |--------------------------------------------------------------------------
     | Escalate AI Alert
     |--------------------------------------------------------------------------
     */
 
-
     public function escalate($alertId)
     {
-
-
         $alert = AiAlert::findOrFail($alertId);
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -36,28 +25,14 @@ class AlertEscalationEngine
         |--------------------------------------------------------------------------
         */
 
-
-        if($alert->status === 'RESOLVED')
-        {
-
+        if ($alert->status === 'RESOLVED') {
             return [
-
-                'alert_id'=>$alert->id,
-
-                'resident_id'=>$alert->resident_id,
-
-                'message'=>
-                    'Alert already resolved. Escalation not required.',
-
-                'duplicate'=>true
-
+                'alert_id' => $alert->id,
+                'resident_id' => $alert->resident_id,
+                'message' => 'Alert already resolved. Escalation not required.',
+                'duplicate' => true,
             ];
-
         }
-
-
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -65,56 +40,27 @@ class AlertEscalationEngine
         |--------------------------------------------------------------------------
         */
 
-
-        $existingEscalation =
-
-            AlertEscalationLog::where(
-                'alert_id',
-                $alert->id
-            )
-            ->whereIn(
-                'status',
-                [
-                    'ESCALATED',
-                    'ACKNOWLEDGED'
-                ]
-            )
+        $existingEscalation = AlertEscalationLog::where(
+            'alert_id',
+            $alert->id
+        )
+            ->whereIn('status', [
+                'ESCALATED',
+                'ACKNOWLEDGED',
+            ])
             ->first();
 
-
-
-
-
-        if($existingEscalation)
-        {
-
+        if ($existingEscalation) {
             return [
-
-                'alert_id'=>$alert->id,
-
-                'resident_id'=>$alert->resident_id,
-
-                'priority'=>$existingEscalation->priority,
-
-                'notification_created'=>false,
-
-                'duplicate'=>true,
-
-                'message'=>
-                    'Alert already escalated.',
-
-                'escalation_log_id'=>
-                    $existingEscalation->id
-
+                'alert_id' => $alert->id,
+                'resident_id' => $alert->resident_id,
+                'priority' => $existingEscalation->priority,
+                'notification_created' => false,
+                'duplicate' => true,
+                'message' => 'Alert already escalated.',
+                'escalation_log_id' => $existingEscalation->id,
             ];
-
         }
-
-
-
-
-
-
 
         /*
         |--------------------------------------------------------------------------
@@ -122,138 +68,49 @@ class AlertEscalationEngine
         |--------------------------------------------------------------------------
         */
 
-
-        switch($alert->severity)
-        {
-
-
-            case "CRITICAL":
-
-
-                $priority = "URGENT";
-
+        switch ($alert->severity) {
+            case 'CRITICAL':
+                $priority = 'URGENT';
 
                 $notificationMessage =
-                    "CRITICAL AI alert requires immediate attention: "
-                    .$alert->message;
-
+                    'CRITICAL AI alert requires immediate attention: '
+                    . $alert->message;
 
                 break;
 
-
-
-            case "HIGH":
-
-
-                $priority = "HIGH";
-
+            case 'HIGH':
+                $priority = 'HIGH';
 
                 $notificationMessage =
-                    "HIGH priority AI alert detected: "
-                    .$alert->message;
-
+                    'HIGH priority AI alert detected: '
+                    . $alert->message;
 
                 break;
-
-
-
 
             default:
-
-
-                $priority = "NORMAL";
-
+                $priority = 'NORMAL';
 
                 $notificationMessage =
-                    "AI health alert requires monitoring: "
-                    .$alert->message;
-
+                    'AI health alert requires monitoring: '
+                    . $alert->message;
 
                 break;
-
-
         }
-
-
-
-
-
-
-
 
         /*
         |--------------------------------------------------------------------------
-        | Create Notification
+        | Create Staff Notifications
         |--------------------------------------------------------------------------
         */
 
-
-        $existingNotification =
-
-            Notification::where(
-                'type',
+        $notificationCount = app(StaffNotificationService::class)
+            ->notifyOperationalStaff(
+                'AI Alert Escalation - ' . $priority,
+                $notificationMessage,
                 'AI_ESCALATION'
-            )
-            ->where(
-                'message',
-                $notificationMessage
-            )
-            ->where(
-                'read_status',
-                0
-            )
-            ->first();
+            );
 
-
-
-
-
-        if(!$existingNotification)
-        {
-
-
-            Notification::create([
-
-
-                'user_id'=>1,
-
-
-                'title'=>
-                    "AI Alert Escalation - ".$priority,
-
-
-                'message'=>
-                    $notificationMessage,
-
-
-                'type'=>
-                    "AI_ESCALATION",
-
-
-                'read_status'=>0
-
-
-            ]);
-
-
-            $notificationCreated=true;
-
-
-        }
-        else
-        {
-
-            $notificationCreated=false;
-
-        }
-
-
-
-
-
-
-
-
+        $notificationCreated = $notificationCount > 0;
 
         /*
         |--------------------------------------------------------------------------
@@ -261,49 +118,15 @@ class AlertEscalationEngine
         |--------------------------------------------------------------------------
         */
 
-
-        $escalationLog =
-
-            AlertEscalationLog::create([
-
-
-                'alert_id'=>
-                    $alert->id,
-
-
-                'resident_id'=>
-                    $alert->resident_id,
-
-
-                'priority'=>
-                    $priority,
-
-
-                'escalation_reason'=>
-                    $alert->message,
-
-
-                'assigned_to'=>
-                    null,
-
-
-                'escalated_at'=>
-                    Carbon::now(),
-
-
-                'status'=>
-                    'ESCALATED'
-
-
-            ]);
-
-
-
-
-
-
-
-
+        $escalationLog = AlertEscalationLog::create([
+            'alert_id' => $alert->id,
+            'resident_id' => $alert->resident_id,
+            'priority' => $priority,
+            'escalation_reason' => $alert->message,
+            'assigned_to' => null,
+            'escalated_at' => Carbon::now(),
+            'status' => 'ESCALATED',
+        ]);
 
         /*
         |--------------------------------------------------------------------------
@@ -311,78 +134,30 @@ class AlertEscalationEngine
         |--------------------------------------------------------------------------
         */
 
-
         ActivityLog::create([
-
-
-            'user_id'=>
-                auth()->id() ?? 1,
-
-
-            'resident_id'=>
-                $alert->resident_id,
-
-
-            'module'=>
-                "AI Alert Escalation",
-
-
-            'action'=>
-                "ESCALATE",
-
-
-            'description'=>
-
-                "AI alert escalated with priority level: "
-                .$priority
-
-
+            'user_id' => auth()->id() ?? 1,
+            'resident_id' => $alert->resident_id,
+            'module' => 'AI Alert Escalation',
+            'action' => 'ESCALATE',
+            'description' =>
+                'AI alert escalated with priority level: '
+                . $priority,
         ]);
 
-
-
-
-
-
-
-
+        /*
+        |--------------------------------------------------------------------------
+        | Return Result
+        |--------------------------------------------------------------------------
+        */
 
         return [
-
-
-            'alert_id'=>
-                $alert->id,
-
-
-            'resident_id'=>
-                $alert->resident_id,
-
-
-            'priority'=>
-                $priority,
-
-
-            'notification_created'=>
-                $notificationCreated,
-
-
-            'escalation_log_id'=>
-                $escalationLog->id,
-
-
-            'task_created'=>
-                false,
-
-
-            'duplicate'=>
-                false
-
-
+            'alert_id' => $alert->id,
+            'resident_id' => $alert->resident_id,
+            'priority' => $priority,
+            'notification_created' => $notificationCreated,
+            'escalation_log_id' => $escalationLog->id,
+            'task_created' => false,
+            'duplicate' => false,
         ];
-
-
     }
-
-
-
 }

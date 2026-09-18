@@ -2,12 +2,10 @@
 
 namespace App\Services;
 
-
 use App\Models\ResidentMedication;
 use App\Models\MedicationAdministrationRecord;
 use App\Models\AiAlert;
 use App\Models\NurseTask;
-use App\Models\Notification;
 
 use App\Services\ClinicalTimelineService;
 
@@ -15,37 +13,15 @@ use App\Enums\ClinicalEventType;
 
 use Carbon\Carbon;
 
-
-
-
 class MedicationComplianceService
 {
-
-
-
-
-
     protected ClinicalTimelineService $timelineService;
-
-
-
 
     public function __construct(
         ClinicalTimelineService $timelineService
-    )
-    {
-
-        $this->timelineService =
-            $timelineService;
-
+    ) {
+        $this->timelineService = $timelineService;
     }
-
-
-
-
-
-
-
 
     /*
     |--------------------------------------------------------------------------
@@ -53,52 +29,20 @@ class MedicationComplianceService
     |--------------------------------------------------------------------------
     */
 
-
     public function detectDelayedMedication()
     {
+        $now = Carbon::now();
 
-
-        $now =
-            Carbon::now();
-
-
-
-
-
-        $medications =
-
-            ResidentMedication::with(
-
-                [
-                    'resident',
-                    'medication'
-                ]
-
-            )
-            ->whereNotNull(
-                'scheduled_time'
-            )
+        $medications = ResidentMedication::with([
+            'resident',
+            'medication'
+        ])
+            ->whereNotNull('scheduled_time')
             ->get();
 
+        $delayedMedications = [];
 
-
-
-
-
-
-        $delayedMedications=[];
-
-
-
-
-
-
-
-        foreach($medications as $medication)
-        {
-
-
-
+        foreach ($medications as $medication) {
 
             /*
             |--------------------------------------------------------------------------
@@ -106,22 +50,10 @@ class MedicationComplianceService
             |--------------------------------------------------------------------------
             */
 
-
-            $scheduledDateTime =
-
-                Carbon::today()
+            $scheduledDateTime = Carbon::today()
                 ->setTimeFromTimeString(
-
                     $medication->scheduled_time
-
                 );
-
-
-
-
-
-
-
 
             /*
             |--------------------------------------------------------------------------
@@ -129,23 +61,12 @@ class MedicationComplianceService
             |--------------------------------------------------------------------------
             */
 
-
             $delayMinutes = round(
-
-                $scheduledDateTime
-                ->diffInMinutes(
+                $scheduledDateTime->diffInMinutes(
                     $now,
                     false
                 )
-
             );
-
-
-
-
-
-
-
 
             /*
             |--------------------------------------------------------------------------
@@ -153,14 +74,7 @@ class MedicationComplianceService
             |--------------------------------------------------------------------------
             */
 
-
-            if($delayMinutes > 15)
-            {
-
-
-
-
-
+            if ($delayMinutes > 15) {
 
                 /*
                 |--------------------------------------------------------------------------
@@ -168,44 +82,21 @@ class MedicationComplianceService
                 |--------------------------------------------------------------------------
                 */
 
-
-                $completed =
-
-                    MedicationAdministrationRecord::where(
-
-                        'resident_medication_id',
-
-                        $medication->id
-
-                    )
+                $completed = MedicationAdministrationRecord::where(
+                    'resident_medication_id',
+                    $medication->id
+                )
                     ->whereDate(
-
                         'completed_time',
-
                         today()
-
                     )
                     ->where(
-
                         'status',
-
                         'COMPLETED'
-
                     )
                     ->exists();
 
-
-
-
-
-
-
-                if(!$completed)
-                {
-
-
-
-
+                if (!$completed) {
 
                     /*
                     |--------------------------------------------------------------------------
@@ -213,36 +104,17 @@ class MedicationComplianceService
                     |--------------------------------------------------------------------------
                     */
 
-
                     $this->timelineService
-                    ->recordMedicationDelayed(
+                        ->recordMedicationDelayed(
+                            $medication->resident_id,
 
+                            $medication->medication->medicine_name
+                                . " delayed by "
+                                . $delayMinutes
+                                . " minutes.",
 
-                        $medication->resident_id,
-
-
-                        $medication->medication->medicine_name
-                        .
-                        " delayed by "
-                        .
-                        $delayMinutes
-                        .
-                        " minutes.",
-
-
-                        $medication->id
-
-
-
-                    );
-
-
-
-
-
-
-
-
+                            $medication->id
+                        );
 
                     /*
                     |--------------------------------------------------------------------------
@@ -250,59 +122,28 @@ class MedicationComplianceService
                     |--------------------------------------------------------------------------
                     */
 
-
-                    $existingAlert =
-
-
-                    AiAlert::where(
-
+                    $existingAlert = AiAlert::where(
                         'resident_id',
-
                         $medication->resident_id
-
                     )
-                    ->where(
+                        ->where(
+                            'alert_type',
+                            'MEDICATION DELAY'
+                        )
+                        ->where(
+                            'status',
+                            'OPEN'
+                        )
+                        ->where(
+                            'message',
+                            'LIKE',
+                            '%'
+                                . $medication->medication->medicine_name
+                                . '%'
+                        )
+                        ->first();
 
-                        'alert_type',
-
-                        'MEDICATION DELAY'
-
-                    )
-                    ->where(
-
-                        'status',
-
-                        'OPEN'
-
-                    )
-                    ->where(
-
-                        'message',
-
-                        'LIKE',
-
-                        '%'
-                        .
-                        $medication->medication->medicine_name
-                        .
-                        '%'
-
-                    )
-                    ->first();
-
-
-
-
-
-
-
-
-                    if(!$existingAlert)
-                    {
-
-
-
-
+                    if (!$existingAlert) {
 
                         /*
                         |--------------------------------------------------------------------------
@@ -310,76 +151,28 @@ class MedicationComplianceService
                         |--------------------------------------------------------------------------
                         */
 
-
-                        $alert =
-
-                        AiAlert::create([
-
-
-
-                            'resident_id'=>
-
+                        $alert = AiAlert::create([
+                            'resident_id' =>
                                 $medication->resident_id,
 
-
-
-                            'alert_type'=>
-
+                            'alert_type' =>
                                 'MEDICATION DELAY',
 
-
-
-                            'severity'=>
-
+                            'severity' =>
                                 'WARNING',
 
+                            'message' =>
+                                $medication->medication->medicine_name
+                                . ' for '
+                                . $medication->resident->full_name
+                                . ' has not been administered. Delay: '
+                                . $delayMinutes
+                                . ' minutes.',
 
+                            'ai_confidence' => 95,
 
-                            'message'=>
-
-                                $medication
-                                ->medication
-                                ->medicine_name
-
-                                .
-                                ' for '
-
-                                .
-                                $medication
-                                ->resident
-                                ->full_name
-
-                                .
-                                ' has not been administered. Delay: '
-
-                                .
-                                $delayMinutes
-
-                                .
-                                ' minutes.',
-
-
-
-                            'ai_confidence'=>
-
-                                95,
-
-
-
-                            'status'=>
-
-                                'OPEN'
-
-
+                            'status' => 'OPEN'
                         ]);
-
-
-
-
-
-
-
-
 
                         /*
                         |--------------------------------------------------------------------------
@@ -387,209 +180,78 @@ class MedicationComplianceService
                         |--------------------------------------------------------------------------
                         */
 
-
                         NurseTask::create([
-
-
-
-                            'resident_id'=>
-
+                            'resident_id' =>
                                 $medication->resident_id,
 
-
-
-                            'task_name'=>
-
+                            'task_name' =>
                                 'Medication Follow Up',
 
+                            'description' =>
+                                $medication->medication->medicine_name
+                                . ' administration overdue by '
+                                . $delayMinutes
+                                . ' minutes.',
 
-
-                            'description'=>
-
-                                $medication
-                                ->medication
-                                ->medicine_name
-
-                                .
-                                ' administration overdue by '
-
-                                .
-                                $delayMinutes
-
-                                .
-                                ' minutes.',
-
-
-
-                            'scheduled_time'=>
-
+                            'scheduled_time' =>
                                 $scheduledDateTime,
 
-
-
-                            'status'=>
-
-                                'Pending'
-
-
+                            'status' => 'Pending'
                         ]);
-
-
-
-
-
-
-
-
 
                         /*
                         |--------------------------------------------------------------------------
-                        | Notification
+                        | Staff Notifications
                         |--------------------------------------------------------------------------
                         */
 
-
-                        Notification::create([
-
-
-
-                            'user_id'=>
-
-                                null,
-
-
-
-                            'title'=>
-
+                        app(StaffNotificationService::class)
+                            ->notifyOperationalStaff(
                                 'Medication Delay Alert',
 
+                                $medication->medication->medicine_name
+                                    . ' for '
+                                    . $medication->resident->full_name
+                                    . ' is overdue by '
+                                    . $delayMinutes
+                                    . ' minutes.',
 
-
-                            'message'=>
-
-                                $medication
-                                ->medication
-                                ->medicine_name
-
-                                .
-                                ' for '
-
-                                .
-                                $medication
-                                ->resident
-                                ->full_name
-
-                                .
-                                ' is overdue by '
-
-                                .
-                                $delayMinutes
-
-                                .
-                                ' minutes.',
-
-
-
-                            'type'=>
-
-                                'MEDICATION_DELAY',
-
-
-
-                            'read_status'=>
-
-                                0
-
-
-                        ]);
-
-
-
-
+                                'MEDICATION_DELAY'
+                            );
                     }
 
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Add Delayed Medication To Result
+                    |--------------------------------------------------------------------------
+                    */
 
-
-
-
-
-
-                    $delayedMedications[]= [
-
-
-
-                        'resident_id'=>
-
+                    $delayedMedications[] = [
+                        'resident_id' =>
                             $medication->resident_id,
 
-
-
-                        'resident'=>
-
+                        'resident' =>
                             $medication->resident->full_name,
 
-
-
-                        'medicine'=>
-
+                        'medicine' =>
                             $medication->medication->medicine_name,
 
-
-
-                        'time_slot'=>
-
+                        'time_slot' =>
                             $medication->time_slot,
 
-
-
-                        'scheduled_time'=>
-
+                        'scheduled_time' =>
                             $medication->scheduled_time,
 
-
-
-                        'delay_minutes'=>
-
+                        'delay_minutes' =>
                             $delayMinutes,
 
-
-
-                        'severity'=>
-
+                        'severity' =>
                             'WARNING'
-
-
                     ];
-
-
-
                 }
-
-
-
             }
-
-
-
         }
 
-
-
-
-
-
-
         return $delayedMedications;
-
-
-
     }
-
-
-    
-
-
-
-
-
 }

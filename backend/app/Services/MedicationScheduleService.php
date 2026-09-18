@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\MedicationAdministrationRecord;
 use App\Models\NurseTask;
-use App\Models\Notification;
 use App\Models\ResidentMedication;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +16,7 @@ class MedicationScheduleService
     |--------------------------------------------------------------------------
     |
     | This method is intentionally side-effectful: it may create a NurseTask
-    | and Notification. It must be called only by the explicit medication
+    | and staff notifications. It must be called only by the explicit medication
     | due-check workflow, never simply to render Today.
     |
     | Current F6.1 rule:
@@ -157,26 +156,24 @@ class MedicationScheduleService
                         'NORMAL',
                 ]);
 
-                Notification::create([
-                    'user_id' =>
-                        null,
+                /*
+                |--------------------------------------------------------------------------
+                | Staff Notifications
+                |--------------------------------------------------------------------------
+                */
 
-                    'title' =>
+                app(StaffNotificationService::class)
+                    ->notifyOperationalStaff(
                         'Medication Reminder',
 
-                    'message' =>
                         $medication->medication->medicine_name
                         . ' for '
                         . $medication->resident->full_name
                         . ' is due at '
                         . $scheduledAt->format('H:i'),
 
-                    'type' =>
-                        'MEDICATION',
-
-                    'read_status' =>
-                        0,
-                ]);
+                        'MEDICATION'
+                    );
             });
 
             $dueMedications[] = [
