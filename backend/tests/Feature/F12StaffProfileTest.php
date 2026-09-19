@@ -119,6 +119,21 @@ class F12StaffProfileTest extends TestCase
 
     private function createTestTables(): void
     {
+
+        Schema::create('activity_logs', function (Blueprint $table) {
+            $table->id();
+            $table->bigInteger('user_id')->nullable();
+            $table->bigInteger('resident_id')->nullable();
+            $table->string('module');
+            $table->string('action');
+            $table->text('description');
+            $table->timestamp('created_on')->nullable();
+            $table->timestamp('updated_on')->nullable();
+        });
+
+        $migration = require database_path('migrations/2026_09_19_000001_create_activity_log_integrity_table.php');
+        $migration->up();
+
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('role_name', 50);

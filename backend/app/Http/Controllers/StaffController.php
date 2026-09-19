@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use App\Services\ActivityLogger;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,10 @@ use Illuminate\Validation\Rule;
 
 class StaffController extends Controller
 {
+    public function __construct(private ActivityLogger $activityLogger)
+    {
+    }
+
     private const STAFF_ROLES = [
         'Administrator',
         'Manager',
@@ -56,14 +61,20 @@ class StaffController extends Controller
             'password' => ['required', 'string', 'min:12', 'confirmed'],
         ]);
 
-        $user = User::create([
-            'full_name' => $validated['full_name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'] ?? null,
-            'role_id' => $validated['role_id'],
-            'password' => Hash::make($validated['password']),
-            'status' => 'Active',
-        ]);
+        $user = DB::transaction(function () use ($validated): User {
+            $user = User::create([
+                'full_name' => $validated['full_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'role_id' => $validated['role_id'],
+                'password' => Hash::make($validated['password']),
+                'status' => 'Active',
+            ]);
+
+            $this->activityLogger->log('Staff Administration', 'created', "Staff account ID {$user->id} created.");
+
+            return $user;
+        });
 
         return response()->json([
             'message' => 'Staff account created.',
@@ -109,7 +120,16 @@ class StaffController extends Controller
             }
         }
 
-        $user->update($validated);
+        DB::transaction(function () use ($user, $validated): void {
+            $user->fill($validated);
+            $changedFields = array_keys($user->getDirty());
+            $user->save();
+
+            if ($changedFields !== []) {
+                $fields = implode(', ', $changedFields);
+                $this->activityLogger->log('Staff Administration', 'updated', "Staff account ID {$user->id} updated. Changed fields: {$fields}.");
+            }
+        });
 
         return response()->json([
             'message' => 'Staff account updated.',
@@ -135,10 +155,16 @@ class StaffController extends Controller
         }
 
         DB::transaction(function () use ($user, $validated): void {
+            $statusChanged = $user->status !== $validated['status'];
             $user->update(['status' => $validated['status']]);
 
             if ($validated['status'] === 'Inactive') {
                 $user->tokens()->delete();
+            }
+
+            if ($statusChanged) {
+                $status = $validated['status'];
+                $this->activityLogger->log('Staff Administration', 'status_changed', "Staff account ID {$user->id} status changed to {$status}.");
             }
         });
 
@@ -162,6 +188,7 @@ class StaffController extends Controller
             ]);
 
             $user->tokens()->delete();
+            $this->activityLogger->log('Staff Administration', 'password_reset', "Password reset for staff account ID {$user->id}. Existing tokens revoked.");
         });
 
         return response()->json([

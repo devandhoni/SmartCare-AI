@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
-class F12StaffAccountSecurityTest extends TestCase
+class F13StaffAuditTest extends TestCase
 {
-    public function test_administrator_can_manage_staff_status_and_reset_password(): void
+    public function test_staff_security_actions_produce_safe_audit_records(): void
     {
         // Verify isolation BEFORE creating tables or records.
         $this->assertSame('testing', app()->environment());
@@ -109,6 +109,17 @@ class F12StaffAccountSecurityTest extends TestCase
 
         // Password reset must revoke existing tokens.
         $this->assertSame(0, $nurse->tokens()->count());
+
+        $logs = DB::table('activity_logs')->orderBy('id')->get();
+        $this->assertCount(3, $logs);
+        $this->assertSame(['status_changed', 'status_changed', 'password_reset'], $logs->pluck('action')->all());
+        $this->assertSame([1, 1, 1], $logs->pluck('user_id')->all());
+        $this->assertSame('Staff Administration', $logs[0]->module);
+        $this->assertStringContainsString('ID 2', $logs[0]->description);
+        $this->assertStringContainsString('Inactive', $logs[0]->description);
+        $this->assertStringContainsString('Active', $logs[1]->description);
+        $this->assertStringNotContainsString('NewNursePassword123!', $logs->pluck('description')->implode(' '));
+        $this->assertStringNotContainsString($nurse->password, $logs->pluck('description')->implode(' '));
 
         // An Administrator must not deactivate their own account.
         $this->putJson('/api/staff/1/status', [

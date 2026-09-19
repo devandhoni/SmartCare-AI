@@ -65,6 +65,8 @@ use App\Http\Controllers\ResidentCarePlanController;
 use App\Http\Controllers\ResidentBillingController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StaffController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ActivityLogIntegrityController;
 
 
 /*
@@ -303,6 +305,30 @@ Route::middleware([
     ]
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| F13 Audit History
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth:sanctum',
+    'active',
+    'role:Administrator',
+])->group(function () {
+
+    Route::get(
+        '/activity-logs',
+        [ActivityLogController::class, 'index']
+    );
+
+    Route::get(
+        '/activity-logs/integrity',
+        ActivityLogIntegrityController::class
+    );
+
+});
 
 /*
 |--------------------------------------------------------------------------
