@@ -6,14 +6,12 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class RoleMiddleware
+class EnsureAccountIsActive
 {
     public function handle(
         Request $request,
-        Closure $next,
-        ...$roles
+        Closure $next
     ): Response {
-        // Check user login.
         $user = $request->user();
 
         if (!$user) {
@@ -22,21 +20,9 @@ class RoleMiddleware
             ], 401);
         }
 
-        // F12: Reject inactive accounts, including those
-        // presenting a previously issued Sanctum token.
         if ($user->status !== 'Active') {
             return response()->json([
                 'message' => 'Account is inactive. Contact your administrator.',
-            ], 403);
-        }
-
-        // Check permission.
-        $userRole = $user->role?->role_name;
-
-        if (!in_array($userRole, $roles, true)) {
-            return response()->json([
-                'message' => 'Access denied',
-                'required_roles' => $roles,
             ], 403);
         }
 

@@ -1,10 +1,10 @@
+
 import {
     BrowserRouter,
     Routes,
     Route,
     useParams,
-}
-from "react-router-dom";
+} from "react-router-dom";
 
 import Login from "./pages/Login";
 
@@ -34,7 +34,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 import ClinicalDashboard from "./components/clinical/ClinicalDashboard";
 import Billing from "./pages/Billing";
-
+import StaffAdministration from "./pages/StaffAdministration";
 
 const OPERATIONAL_ROLES = [
     "Administrator",
@@ -45,7 +45,6 @@ const ADMIN_ROLES = [
     "Administrator",
 ];
 
-
 function ClinicalDashboardWrapper() {
     const { id } = useParams();
 
@@ -55,7 +54,6 @@ function ClinicalDashboardWrapper() {
         />
     );
 }
-
 
 function OperationalPage({ children }) {
     return (
@@ -69,7 +67,6 @@ function OperationalPage({ children }) {
     );
 }
 
-
 function AdministratorPage({ children }) {
     return (
         <ProtectedRoute
@@ -81,7 +78,6 @@ function AdministratorPage({ children }) {
         </ProtectedRoute>
     );
 }
-
 
 function App() {
     return (
@@ -127,7 +123,6 @@ function App() {
                         </OperationalPage>
                     }
                 />
-
 
                 <Route
                     path="/family-messages"
@@ -256,6 +251,15 @@ function App() {
                 />
 
                 <Route
+                    path="/staff"
+                    element={
+                        <AdministratorPage>
+                            <StaffAdministration />
+                        </AdministratorPage>
+                    }
+                />
+
+                <Route
                     path="/admin/dashboard"
                     element={
                         <AdministratorPage>
@@ -273,7 +277,6 @@ function App() {
                     }
                 />
             </Routes>
-
         </BrowserRouter>
     );
 }

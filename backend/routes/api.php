@@ -64,6 +64,7 @@ use App\Http\Controllers\FamilyMessageLogController;
 use App\Http\Controllers\ResidentCarePlanController;
 use App\Http\Controllers\ResidentBillingController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StaffController;
 
 
 /*
@@ -83,7 +84,7 @@ Route::post(
 
 
 
-Route::middleware('auth:sanctum')
+Route::middleware(['auth:sanctum', 'active'])
 ->post(
     '/logout',
     [
@@ -167,12 +168,20 @@ Route::middleware([
     ]
 );
 
-Route::get(
+Route::middleware([
+    'auth:sanctum',
+    'active',
+    'role:Administrator,Nurse'
+])->get(
     '/nurse/residents/{id}/medication-dashboard',
     [NurseDashboardController::class,'medicationDashboard']
 );
 
-Route::get(
+Route::middleware([
+    'auth:sanctum',
+    'active',
+    'role:Administrator,Nurse'
+])->get(
     '/nurse/dashboard/{residentId}',
     [NurseDashboardController::class,'residentDashboard']
 );
@@ -294,6 +303,35 @@ Route::middleware([
     ]
 );
 
+
+/*
+|--------------------------------------------------------------------------
+| F12 Staff Administration
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth:sanctum',
+    'active',
+    'role:Administrator',
+])->group(function () {
+
+    Route::get('/staff', [StaffController::class, 'index']);
+
+    Route::post('/staff', [StaffController::class, 'store']);
+
+    Route::get('/staff/{id}', [StaffController::class, 'show']);
+
+    Route::put('/staff/{id}', [StaffController::class, 'update']);
+
+    Route::put('/staff/{id}/status', [StaffController::class, 'updateStatus']);
+
+    Route::put('/staff/{id}/reset-password', [StaffController::class, 'resetPassword']);
+
+});
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Protected Application Routes
@@ -303,6 +341,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator,Nurse'
 ])
 ->group(function(){

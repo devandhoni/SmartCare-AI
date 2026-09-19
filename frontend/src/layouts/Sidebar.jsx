@@ -111,6 +111,12 @@ const menuSections = [
         title: "Management",
         items: [
             {
+                name: "Staff Administration",
+                path: "/staff",
+                icon: "👤",
+                roles: ["Administrator"],
+            },
+            {
                 name: "Reports",
                 path: "/reports",
                 icon: "📊",
