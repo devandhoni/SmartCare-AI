@@ -35,7 +35,8 @@ class VitalSignController extends Controller
         ActivityLogger $logger,
         ClinicalTimelineService $timelineService
     )
-    {
+        {
+        $resident = Resident::findOrFail($id);
 
         if ($resident->status !== 'Active') {
             return response()->json([
