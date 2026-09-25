@@ -85,7 +85,7 @@ const AIClinicalTimeline = ({
             const response =
             await axios.get(
 
-                `http://127.0.0.1:8000/api/residents/${residentId}/timeline`,
+                `${import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api"}/residents/${residentId}/timeline`,
 
                 {
 

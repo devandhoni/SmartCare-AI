@@ -169,6 +169,15 @@ class F11AlertEscalationTest extends TestCase
             $table->timestamp('updated_on')->nullable();
         });
 
+        Schema::create('activity_log_integrity', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('activity_log_id')->unique();
+            $table->char('previous_hash', 64)->nullable();
+            $table->char('payload_hash', 64);
+            $table->char('chain_hash', 64)->unique();
+            $table->timestamp('created_at')->useCurrent();
+        });
+
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->nullable();

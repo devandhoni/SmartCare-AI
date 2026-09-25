@@ -203,7 +203,7 @@ return new class extends Migration
                     'resident_id',
                     'status',
                 ],
-                'rd_resident_status_idx'
+                'resident_discharges_resident_status_idx'
             );
 
             $table->index(
