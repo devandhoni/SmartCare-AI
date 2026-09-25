@@ -26,8 +26,14 @@ class HealthPredictionAnalyzer
 
 
         if(
-            $vital->blood_pressure_systolic >= 160 ||
-            $vital->blood_pressure_diastolic >= 100
+            (
+                $vital->blood_pressure_systolic !== null &&
+                $vital->blood_pressure_systolic >= 160
+            ) ||
+            (
+                $vital->blood_pressure_diastolic !== null &&
+                $vital->blood_pressure_diastolic >= 100
+            )
         )
         {
 
@@ -58,6 +64,7 @@ class HealthPredictionAnalyzer
 
 
         if(
+            $vital->oxygen_level !== null &&
             $vital->oxygen_level < 92
         )
         {
@@ -89,6 +96,7 @@ class HealthPredictionAnalyzer
 
 
         if(
+            $vital->blood_glucose !== null &&
             $vital->blood_glucose >= 10
         )
         {
@@ -120,6 +128,7 @@ class HealthPredictionAnalyzer
 
 
         if(
+            $vital->temperature !== null &&
             $vital->temperature >= 38
         )
         {

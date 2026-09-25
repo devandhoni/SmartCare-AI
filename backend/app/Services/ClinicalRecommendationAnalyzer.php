@@ -66,6 +66,7 @@ class ClinicalRecommendationAnalyzer
 
 
         if(
+            $vital->oxygen_level !== null &&
             $vital->oxygen_level < 92
         )
         {
