@@ -110,11 +110,11 @@ class MonthlyBillingInvoiceService
             $generatedBy
         ) {
             $existing = BillingInvoice::query()
-                ->where('resident_id', $residentId)
-                ->where('billing_period_start', $periodStart)
-                ->where('billing_period_end', $periodEnd)
-                ->lockForUpdate()
-                ->first();
+            ->where('resident_id', $residentId)
+            ->whereDate('billing_period_start', $periodStart)
+            ->whereDate('billing_period_end', $periodEnd)
+            ->lockForUpdate()
+            ->first();
 
             if ($existing) {
                 throw ValidationException::withMessages([

@@ -198,6 +198,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -210,6 +211,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -222,6 +224,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -235,6 +238,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -247,6 +251,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -259,6 +264,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -271,6 +277,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -283,6 +290,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
@@ -295,6 +303,7 @@ Route::middleware([
 
 Route::middleware([
     'auth:sanctum',
+    'active',
     'role:Administrator'
 ])
 ->get(
