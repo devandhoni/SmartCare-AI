@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\WhatsAppProvider;
 use App\Services\ActivityLogCheckpointService;
+use App\Services\WhatsApp\LocalWhatsAppProvider;
 use App\Services\WhatsApp\NullWhatsAppProvider;
 use Illuminate\Support\ServiceProvider;
 use RuntimeException;
@@ -16,13 +17,32 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         /*
-         * F7.3 safe default: no external WhatsApp traffic.
-         * A real provider binding will replace this in a later F7 step.
+         * WhatsApp provider selection.
+         *
+         * Safe default:
+         *   WHATSAPP_PROVIDER=null
+         *
+         * Temporary local delivery testing:
+         *   WHATSAPP_PROVIDER=local
          */
-        $this->app->bind(
-            WhatsAppProvider::class,
-            NullWhatsAppProvider::class
-        );
+        $this->app->bind(WhatsAppProvider::class, function () {
+            $provider = strtolower(
+                trim((string) config('services.whatsapp.provider', ''))
+            );
+
+            if ($provider === '') {
+                $provider = 'null';
+            }
+
+            return match ($provider) {
+                'local' => app(LocalWhatsAppProvider::class),
+                'null' => app(NullWhatsAppProvider::class),
+
+                default => throw new RuntimeException(
+                    "Unsupported WhatsApp provider [{$provider}]."
+                ),
+            };
+        });
 
         /*
          * F13: Checkpoint paths are installation-specific.

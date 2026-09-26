@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        'provider' => env('WHATSAPP_PROVIDER', 'null'),
+        'local_url' => env('WHATSAPP_LOCAL_URL', 'http://127.0.0.1:3100'),
+    ],
+
 ];

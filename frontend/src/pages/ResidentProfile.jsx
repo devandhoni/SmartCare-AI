@@ -1043,6 +1043,21 @@ const [mealConfirmations, setMealConfirmations] = useState({
     NIGHT: false,
 });
 
+const [medicationOptions, setMedicationOptions] = useState([]);
+const [showAddMedication, setShowAddMedication] = useState(false);
+const [savingMedication, setSavingMedication] = useState(false);
+const [newMedication, setNewMedication] = useState({
+    medication_id: "",
+    dosage_instruction: "",
+    dosage_quantity: "1",
+    frequency: "Daily",
+    time_slot: "",
+    scheduled_time: "",
+    start_date: "",
+    end_date: "",
+    prescribed_by: "",
+});
+
 useEffect(() => {
     const loadMedicationData = async () => {
         try {
@@ -1087,6 +1102,7 @@ useEffect(() => {
     };
 
     loadMedicationData();
+    loadMedicationOptions();
 }, [id]);
 
 
@@ -1626,6 +1642,127 @@ const formatMedicationDateTime = (value) => {
     });
 };
 
+async function loadMedicationOptions() {
+    try {
+        const response = await api.get("/medications");
+
+        const payload = response.data;
+
+        let medicines = [];
+
+        if (Array.isArray(payload)) {
+            medicines = payload;
+        } else if (Array.isArray(payload?.medications)) {
+            medicines = payload.medications;
+        } else if (Array.isArray(payload?.data)) {
+            medicines = payload.data;
+        } else if (Array.isArray(payload?.medications?.data)) {
+            medicines = payload.medications.data;
+        } else if (Array.isArray(payload?.data?.data)) {
+            medicines = payload.data.data;
+        }
+
+        setMedicationOptions(medicines);
+    } catch (error) {
+        console.error("Failed to load medication catalogue:", error);
+        setMedicationOptions([]);
+
+        setMedicationError(
+            error.response?.data?.message ||
+            "Unable to load the medicine catalogue."
+        );
+    }
+}
+
+
+
+const resetNewMedication = () => {
+    setNewMedication({
+        medication_id: "",
+        dosage_instruction: "",
+        dosage_quantity: "1",
+        frequency: "Daily",
+        time_slot: "",
+        scheduled_time: "",
+        start_date: "",
+        end_date: "",
+        prescribed_by: "",
+    });
+};
+
+const handleNewMedicationChange = (event) => {
+    const { name, value } = event.target;
+
+    setNewMedication((current) => ({
+        ...current,
+        [name]: value,
+    }));
+};
+
+const handleAddResidentMedication = async (event) => {
+    event.preventDefault();
+
+    if (!newMedication.medication_id) {
+        setMedicationError("Please select a medicine.");
+        return;
+    }
+
+    if (!newMedication.frequency.trim()) {
+        setMedicationError("Please enter the medication frequency.");
+        return;
+    }
+
+    if (!newMedication.time_slot) {
+        setMedicationError("Please select the medication round.");
+        return;
+    }
+
+    const quantity = Number(newMedication.dosage_quantity);
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+        setMedicationError("Dosage quantity must be greater than zero.");
+        return;
+    }
+
+    try {
+        setSavingMedication(true);
+        setMedicationError("");
+
+        await api.post(`/residents/${id}/medications`, {
+            medication_id: Number(newMedication.medication_id),
+            dosage_instruction:
+                newMedication.dosage_instruction.trim() || null,
+            dosage_quantity: quantity,
+            frequency: newMedication.frequency.trim(),
+            time_slot: newMedication.time_slot,
+            scheduled_time: newMedication.scheduled_time || null,
+            start_date: newMedication.start_date || null,
+            end_date: newMedication.end_date || null,
+            prescribed_by: newMedication.prescribed_by.trim() || null,
+        });
+
+        await refreshMedicationData();
+
+        resetNewMedication();
+        setShowAddMedication(false);
+    } catch (error) {
+        console.error("Failed to add resident medication:", error);
+
+        const validationErrors = error.response?.data?.errors;
+        const firstValidationError = validationErrors
+            ? Object.values(validationErrors).flat().find(Boolean)
+            : null;
+
+        setMedicationError(
+            firstValidationError ||
+            error.response?.data?.message ||
+            "Unable to add the medication. Please check the details and try again."
+        );
+    } finally {
+        setSavingMedication(false);
+    }
+};
+
 const refreshMedicationData = async () => {
     const [scheduleResponse, historyResponse] = await Promise.all([
         api.get(`/residents/${id}/medication-schedule`),
@@ -1704,7 +1841,9 @@ const handleCompleteMedicationRound = async (round) => {
         for (const medication of pendingMedications) {
             await api.put(
                 `/medication-administration/${medication.id}/complete`,
-                {}
+                {
+                    meal_confirmed: true,
+                }
             );
         }
 
@@ -3918,26 +4057,254 @@ const getTimelineBadgeStyle = (entry) => {
                         </div>
                     </div>
 
-                    <div className="
-                        w-full
-                        rounded-xl
-                        bg-blue-50
-                        px-4
-                        py-3
-                        lg:w-auto
-                        lg:min-w-[180px]
-                    ">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
-                            Resident
-                        </p>
+                    <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:items-center">
+    <div className="
+        w-full
+        rounded-xl
+        bg-blue-50
+        px-4
+        py-3
+        sm:min-w-[180px]
+        lg:w-auto
+    ">
+        <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">
+            Resident
+        </p>
 
-                        <p className="mt-1 break-words font-bold text-blue-700">
-                            {resident.name}
-                        </p>
-                    </div>
+        <p className="mt-1 break-words font-bold text-blue-700">
+            {resident.name}
+        </p>
+    </div>
+
+    <button
+        type="button"
+        onClick={() => {
+            setMedicationError("");
+            setShowAddMedication((current) => !current);
+        }}
+        className="
+            rounded-xl
+            bg-blue-600
+            px-4
+            py-3
+            text-sm
+            font-semibold
+            text-white
+            transition
+            hover:bg-blue-700
+        "
+    >
+        {showAddMedication ? "Cancel" : "+ Add Medication"}
+    </button>
+</div>
                 </div>
             </div>
+        {showAddMedication && (
+    <form
+        onSubmit={handleAddResidentMedication}
+        className="
+            w-full
+            rounded-2xl
+            border
+            border-blue-200
+            bg-blue-50
+            p-4
+            shadow-sm
+            sm:p-5
+        "
+    >
+        <div className="mb-5">
+            <h3 className="text-lg font-bold text-slate-800">
+                Add Medication
+            </h3>
 
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+                Add a medicine to {resident.name}&apos;s active medication schedule.
+            </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Medicine *
+                </span>
+
+                <select
+                    name="medication_id"
+                    value={newMedication.medication_id}
+                    onChange={handleNewMedicationChange}
+                    required
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                >
+                    <option value="">Select medicine</option>
+
+                    {medicationOptions.map((medicine) => (
+                        <option key={medicine.id} value={medicine.id}>
+                            {[
+                                medicine.medicine_name ||
+                                    medicine.name ||
+                                    medicine.medication_name ||
+                                    `Medicine #${medicine.id}`,
+                                medicine.dosage || medicine.strength,
+                                medicine.unit,
+                            ]
+                                .filter(Boolean)
+                                .join(" - ")}
+                        </option>
+                    ))}
+                </select>
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Dosage Instruction
+                </span>
+
+                <input
+                    type="text"
+                    name="dosage_instruction"
+                    value={newMedication.dosage_instruction}
+                    onChange={handleNewMedicationChange}
+                    placeholder="e.g. After food"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Dosage Quantity *
+                </span>
+
+                <input
+                    type="number"
+                    name="dosage_quantity"
+                    min="1"
+                    step="1"
+                    value={newMedication.dosage_quantity}
+                    onChange={handleNewMedicationChange}
+                    required
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Frequency *
+                </span>
+
+                <input
+                    type="text"
+                    name="frequency"
+                    value={newMedication.frequency}
+                    onChange={handleNewMedicationChange}
+                    placeholder="e.g. Daily"
+                    required
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Round / Time Slot *
+                </span>
+
+                <select
+                    name="time_slot"
+                    value={newMedication.time_slot}
+                    onChange={handleNewMedicationChange}
+                    required
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                >
+                    <option value="">Select round</option>
+                    <option value="AM">AM - Breakfast</option>
+                    <option value="PM">PM - Lunch</option>
+                    <option value="NIGHT">Night - Dinner</option>
+                    <option value="OTHER">Other</option>
+                </select>
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Scheduled Time
+                </span>
+
+                <input
+                    type="time"
+                    name="scheduled_time"
+                    value={newMedication.scheduled_time}
+                    onChange={handleNewMedicationChange}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Start Date
+                </span>
+
+                <input
+                    type="date"
+                    name="start_date"
+                    value={newMedication.start_date}
+                    onChange={handleNewMedicationChange}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    End Date
+                </span>
+
+                <input
+                    type="date"
+                    name="end_date"
+                    value={newMedication.end_date}
+                    onChange={handleNewMedicationChange}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+
+            <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-700">
+                    Prescribed By
+                </span>
+
+                <input
+                    type="text"
+                    name="prescribed_by"
+                    value={newMedication.prescribed_by}
+                    onChange={handleNewMedicationChange}
+                    placeholder="Doctor / prescriber"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700"
+                />
+            </label>
+        </div>
+
+        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <button
+                type="button"
+                onClick={() => {
+                    resetNewMedication();
+                    setMedicationError("");
+                    setShowAddMedication(false);
+                }}
+                disabled={savingMedication}
+                className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+                Cancel
+            </button>
+
+            <button
+                type="submit"
+                disabled={savingMedication}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                {savingMedication ? "Saving..." : "Save Medication"}
+            </button>
+        </div>
+    </form>
+)}
             {medicationError && (
                 <div className="
                     w-full
@@ -6754,7 +7121,7 @@ const getTimelineBadgeStyle = (entry) => {
                         </h3>
 
                         <p className="mt-2 text-sm leading-6 text-slate-600">
-                            Contacts marked with WhatsApp and Medication Updates enabled are prepared for the future automated notification workflow.
+                            Eligible family contacts can receive a WhatsApp update after a medication round is completed and the linked meal is confirmed.
                         </p>
 
                         <div className="mt-4 rounded-xl bg-white p-4">
@@ -6768,7 +7135,7 @@ const getTimelineBadgeStyle = (entry) => {
                         </div>
 
                         <p className="mt-3 text-xs leading-5 text-slate-500">
-                            WhatsApp delivery itself is not enabled yet. This screen now stores the real recipient and notification preferences that the backend will use later.
+                            Notifications are sent only to contacts with WhatsApp and Medication Updates enabled. Delivery attempts are recorded by SmartCare-AI for operational tracking.
                         </p>
                     </div>
                 </div>
