@@ -1,0 +1,217 @@
+import React from "react";
+import { Text } from "react-native";
+import {
+  createBottomTabNavigator,
+} from "@react-navigation/bottom-tabs";
+import {
+  createNativeStackNavigator,
+  type NativeStackScreenProps,
+} from "@react-navigation/native-stack";
+
+import TodayScreen from "../screens/dashboard/TodayScreen";
+import MoreScreen from "../screens/dashboard/MoreScreen";
+import ModulePlaceholderScreen from "../components/ModulePlaceholderScreen";
+import type { MobileModule } from "./menuConfig";
+
+export type AppStackParamList = {
+  MainTabs: undefined;
+  Module: {
+    module: MobileModule;
+    title: string;
+  };
+};
+
+type MainTabParamList = {
+  Today: undefined;
+  Residents: undefined;
+  Medication: undefined;
+  NurseTasks: undefined;
+  More: undefined;
+};
+
+const Stack =
+  createNativeStackNavigator<AppStackParamList>();
+
+const Tab =
+  createBottomTabNavigator<MainTabParamList>();
+
+const moduleTitles: Record<MobileModule, string> = {
+  Today: "Today",
+  Residents: "Residents",
+  Medication: "Medication",
+  FamilyMessages: "Family Messages",
+  NurseTasks: "Nurse Tasks",
+  CareRecords: "Care Records",
+  Admissions: "Admissions",
+  Discharges: "Discharges",
+  Inventory: "Inventory",
+  Billing: "Billing",
+  MonthlyGlucose: "Monthly Glucose",
+  WeeklyVitals: "Weekly Vitals",
+  Visitors: "Visitors",
+  HomeLeave: "Home Leave",
+  Parcels: "Parcels",
+  AIIntelligence: "AI Intelligence",
+  StaffAdministration: "Staff Administration",
+  Reports: "Reports",
+  ManagementDashboard: "Management Dashboard",
+};
+
+function ResidentsPlaceholder() {
+  return (
+    <ModulePlaceholderScreen title="Residents" />
+  );
+}
+
+function MedicationPlaceholder() {
+  return (
+    <ModulePlaceholderScreen title="Medication" />
+  );
+}
+
+function NurseTasksPlaceholder() {
+  return (
+    <ModulePlaceholderScreen title="Nurse Tasks" />
+  );
+}
+
+function MainTabs({
+  navigation,
+}: NativeStackScreenProps<
+  AppStackParamList,
+  "MainTabs"
+>) {
+  const openModule = (module: MobileModule) => {
+    navigation.navigate("Module", {
+      module,
+      title: moduleTitles[module],
+    });
+  };
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: "#ffffff",
+        },
+        headerTitleStyle: {
+          fontWeight: "700",
+        },
+        headerTintColor: "#0f172a",
+        tabBarActiveTintColor: "#2563eb",
+        tabBarInactiveTintColor: "#64748b",
+        tabBarStyle: {
+          height: 64,
+          paddingTop: 6,
+          paddingBottom: 8,
+        },
+      }}
+    >
+      <Tab.Screen
+        name="Today"
+        component={TodayScreen}
+        options={{
+          title: "Today",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>
+              ☀
+            </Text>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="Residents"
+        component={ResidentsPlaceholder}
+        options={{
+          title: "Residents",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>
+              👥
+            </Text>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="Medication"
+        component={MedicationPlaceholder}
+        options={{
+          title: "Medication",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>
+              💊
+            </Text>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="NurseTasks"
+        component={NurseTasksPlaceholder}
+        options={{
+          title: "Tasks",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 20 }}>
+              ✓
+            </Text>
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="More"
+        options={{
+          title: "More",
+          tabBarIcon: ({ color }) => (
+            <Text style={{ color, fontSize: 22 }}>
+              ⋯
+            </Text>
+          ),
+        }}
+      >
+        {() => (
+          <MoreScreen
+            onOpenModule={openModule}
+          />
+        )}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
+
+function ModuleScreen({
+  route,
+}: NativeStackScreenProps<
+  AppStackParamList,
+  "Module"
+>) {
+  return (
+    <ModulePlaceholderScreen
+      title={route.params.title}
+    />
+  );
+}
+
+export default function AppNavigator() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabs}
+        options={{
+          headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="Module"
+        component={ModuleScreen}
+        options={({ route }) => ({
+          title: route.params.title,
+          headerBackTitle: "Back",
+        })}
+      />
+    </Stack.Navigator>
+  );
+}
