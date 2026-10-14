@@ -11,6 +11,10 @@ import {
 import TodayScreen from "../screens/dashboard/TodayScreen";
 import MoreScreen from "../screens/dashboard/MoreScreen";
 import ModulePlaceholderScreen from "../components/ModulePlaceholderScreen";
+import ResidentsScreen from "../screens/residents/ResidentsScreen";
+import ResidentProfileScreen from "../screens/residents/ResidentProfileScreen";
+import ResidentVitalsScreen from "../screens/vitals/ResidentVitalsScreen";
+import RecordVitalsScreen from "../screens/vitals/RecordVitalsScreen";
 import type { MobileModule } from "./menuConfig";
 
 export type AppStackParamList = {
@@ -18,6 +22,15 @@ export type AppStackParamList = {
   Module: {
     module: MobileModule;
     title: string;
+  };
+  ResidentProfile: {
+    residentId: number;
+  };
+  ResidentVitals: {
+    residentId: number;
+  };
+  RecordVitals: {
+    residentId: number;
   };
 };
 
@@ -122,7 +135,7 @@ function MainTabs({
 
       <Tab.Screen
         name="Residents"
-        component={ResidentsPlaceholder}
+        component={ResidentsScreen}
         options={{
           title: "Residents",
           tabBarIcon: ({ color }) => (
@@ -201,6 +214,30 @@ export default function AppNavigator() {
         component={MainTabs}
         options={{
           headerShown: false,
+        }}
+      />
+
+      <Stack.Screen
+        name="ResidentProfile"
+        component={ResidentProfileScreen}
+        options={{
+          title: "Resident Profile",
+        }}
+      />
+
+      <Stack.Screen
+        name="ResidentVitals"
+        component={ResidentVitalsScreen}
+        options={{
+          title: "Vital Signs",
+        }}
+      />
+
+      <Stack.Screen
+        name="RecordVitals"
+        component={RecordVitalsScreen}
+        options={{
+          title: "Record Vital Signs",
         }}
       />
 
