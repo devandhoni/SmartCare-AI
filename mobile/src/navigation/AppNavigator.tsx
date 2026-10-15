@@ -16,10 +16,15 @@ import ResidentProfileScreen from "../screens/residents/ResidentProfileScreen";
 import ResidentVitalsScreen from "../screens/vitals/ResidentVitalsScreen";
 import RecordVitalsScreen from "../screens/vitals/RecordVitalsScreen";
 import MedicationScreen from "../screens/medication/MedicationScreen";
+import NurseTasksScreen from "../screens/care/NurseTasksScreen";
+import CareRecordsScreen from "../screens/care/CareRecordsScreen";
+import CarePlansScreen from "../screens/care/CarePlansScreen";
 import type { MobileModule } from "./menuConfig";
 
 export type AppStackParamList = {
   MainTabs: undefined;
+  CarePlans: undefined;
+  CareRecords: undefined;
   Module: {
     module: MobileModule;
     title: string;
@@ -56,6 +61,7 @@ const moduleTitles: Record<MobileModule, string> = {
   FamilyMessages: "Family Messages",
   NurseTasks: "Nurse Tasks",
   CareRecords: "Care Records",
+  CarePlans: "Care Plans",
   Admissions: "Admissions",
   Discharges: "Discharges",
   Inventory: "Inventory",
@@ -96,11 +102,21 @@ function MainTabs({
   "MainTabs"
 >) {
   const openModule = (module: MobileModule) => {
-    navigation.navigate("Module", {
-      module,
-      title: moduleTitles[module],
-    });
-  };
+  if (module === "CareRecords") {
+    navigation.navigate("CareRecords");
+    return;
+  }
+
+  if (module === "CarePlans") {
+  navigation.navigate("CarePlans");
+  return;
+}
+
+  navigation.navigate("Module", {
+    module,
+    title: moduleTitles[module],
+  });
+};
 
   return (
     <Tab.Navigator
@@ -162,7 +178,7 @@ function MainTabs({
 
       <Tab.Screen
         name="NurseTasks"
-        component={NurseTasksPlaceholder}
+        component={NurseTasksScreen}
         options={{
           title: "Tasks",
           tabBarIcon: ({ color }) => (
@@ -239,6 +255,24 @@ export default function AppNavigator() {
         component={RecordVitalsScreen}
         options={{
           title: "Record Vital Signs",
+        }}
+      />
+
+      <Stack.Screen
+        name="CarePlans"
+        component={CarePlansScreen}
+        options={{
+          title: "Care Plans",
+          headerBackTitle: "Back",
+        }}
+      />
+
+      <Stack.Screen
+        name="CareRecords"
+        component={CareRecordsScreen}
+        options={{
+          title: "Care Records",
+          headerBackTitle: "Back",
         }}
       />
 

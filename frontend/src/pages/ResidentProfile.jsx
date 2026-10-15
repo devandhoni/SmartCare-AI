@@ -538,7 +538,7 @@ const handleSaveCarePlan = async (event) => {
 
 const handleCarePlanStatus = async (plan) => {
     const active = Boolean(plan.is_active);
-    const actionLabel = active ? "deactivate" : "reactivate";
+    const actionLabel = active ? "deactivate" : "activate";
 
     const confirmed = window.confirm(
         `${active ? "Deactivate" : "Reactivate"} "${plan.title}" for this resident?`

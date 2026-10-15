@@ -7,6 +7,7 @@ export type MobileModule =
   | "FamilyMessages"
   | "NurseTasks"
   | "CareRecords"
+  | "CarePlans"
   | "Admissions"
   | "Discharges"
   | "Inventory"
@@ -76,6 +77,11 @@ export const moreMenuSections: MobileMenuSection[] = [
       {
         name: "Care Records",
         route: "CareRecords",
+        roles: clinicalRoles,
+      },
+      {
+        name: "Care Plans",
+        route: "CarePlans",
         roles: clinicalRoles,
       },
       {
