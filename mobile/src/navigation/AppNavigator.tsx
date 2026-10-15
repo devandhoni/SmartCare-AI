@@ -22,10 +22,14 @@ import CarePlansScreen from "../screens/care/CarePlansScreen";
 import type { MobileModule } from "./menuConfig";
 import AdmissionsScreen from "../screens/admissions/AdmissionsScreen";
 import AdmissionWizardScreen from "../screens/admissions/AdmissionWizardScreen";
+import DischargesScreen from "../screens/discharges/DischargesScreen";
+import DischargeWizardScreen from "../screens/discharges/DischargeWizardScreen";
 
 export type AppStackParamList = {
   MainTabs: undefined;
   Admissions: undefined;
+  Discharges: undefined;
+  DischargeWizard: { dischargeId?: number } | undefined;
   AdmissionWizard: { draftId?: number } | undefined;
   CarePlans: undefined;
   CareRecords: undefined;
@@ -108,6 +112,10 @@ function MainTabs({
   const openModule = (module: MobileModule) => {
   if (module === "Admissions") {
     navigation.navigate("Admissions");
+    return;
+  }
+  if (module === "Discharges") {
+    navigation.navigate("Discharges");
     return;
   }
   if (module === "CareRecords") {
@@ -284,6 +292,8 @@ export default function AppNavigator() {
         }}
       />
 
+      <Stack.Screen name="Discharges" component={DischargesScreen} options={{ title: "Discharges", headerBackTitle: "Back" }} />
+      <Stack.Screen name="DischargeWizard" component={DischargeWizardScreen} options={{ title: "Discharge Wizard", headerBackTitle: "Discharges" }} />
       <Stack.Screen name="Admissions" component={AdmissionsScreen} options={{ title: "Admissions", headerBackTitle: "Back" }} />
       <Stack.Screen name="AdmissionWizard" component={AdmissionWizardScreen} options={{ title: "Admission Wizard", headerBackTitle: "Admissions" }} />
       <Stack.Screen
