@@ -15,6 +15,7 @@ import ResidentsScreen from "../screens/residents/ResidentsScreen";
 import ResidentProfileScreen from "../screens/residents/ResidentProfileScreen";
 import ResidentVitalsScreen from "../screens/vitals/ResidentVitalsScreen";
 import RecordVitalsScreen from "../screens/vitals/RecordVitalsScreen";
+import MedicationScreen from "../screens/medication/MedicationScreen";
 import type { MobileModule } from "./menuConfig";
 
 export type AppStackParamList = {
@@ -148,7 +149,7 @@ function MainTabs({
 
       <Tab.Screen
         name="Medication"
-        component={MedicationPlaceholder}
+        component={MedicationScreen}
         options={{
           title: "Medication",
           tabBarIcon: ({ color }) => (
