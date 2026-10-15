@@ -26,6 +26,7 @@ import DischargesScreen from "../screens/discharges/DischargesScreen";
 import DischargeWizardScreen from "../screens/discharges/DischargeWizardScreen";
 import MonthlyGlucoseScreen from "../screens/monitoring/MonthlyGlucoseScreen";
 import WeeklyVitalsScreen from "../screens/monitoring/WeeklyVitalsScreen";
+import InventoryScreen from "../screens/inventory/InventoryScreen";
 
 export type AppStackParamList = {
   MainTabs: undefined;
@@ -33,6 +34,7 @@ export type AppStackParamList = {
   Discharges: undefined;
   MonthlyGlucose: undefined;
   WeeklyVitals: undefined;
+  Inventory: undefined;
   DischargeWizard: { dischargeId?: number } | undefined;
   AdmissionWizard: { draftId?: number } | undefined;
   CarePlans: undefined;
@@ -131,6 +133,11 @@ function MainTabs({
 
   if (module === "CarePlans") {
   navigation.navigate("CarePlans");
+  return;
+}
+
+if (module === "Inventory") {
+  navigation.navigate("Inventory");
   return;
 }
 
@@ -298,12 +305,24 @@ export default function AppNavigator() {
         }}
       />
 
+
       <Stack.Screen name="MonthlyGlucose" component={MonthlyGlucoseScreen} options={{ title: "Monthly Glucose", headerBackTitle: "Back" }} />
       <Stack.Screen name="WeeklyVitals" component={WeeklyVitalsScreen} options={{ title: "Weekly Vitals", headerBackTitle: "Back" }} />
       <Stack.Screen name="Discharges" component={DischargesScreen} options={{ title: "Discharges", headerBackTitle: "Back" }} />
       <Stack.Screen name="DischargeWizard" component={DischargeWizardScreen} options={{ title: "Discharge Wizard", headerBackTitle: "Discharges" }} />
       <Stack.Screen name="Admissions" component={AdmissionsScreen} options={{ title: "Admissions", headerBackTitle: "Back" }} />
       <Stack.Screen name="AdmissionWizard" component={AdmissionWizardScreen} options={{ title: "Admission Wizard", headerBackTitle: "Admissions" }} />
+
+      <Stack.Screen
+        name="Inventory"
+        component={InventoryScreen}
+        options={{
+          title: "Medicine Inventory",
+          headerBackTitle: "Back",
+        }}
+      />
+
+      
       <Stack.Screen
         name="Module"
         component={ModuleScreen}
