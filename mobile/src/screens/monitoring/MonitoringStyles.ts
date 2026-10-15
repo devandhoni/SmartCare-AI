@@ -1,0 +1,23 @@
+import { StyleSheet } from "react-native";
+export const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#f8fafc" },
+  content: { padding: 16, paddingBottom: 45 },
+  heading: { fontSize: 24, fontWeight: "800", color: "#0f172a" },
+  subtitle: { color: "#64748b", marginTop: 5, marginBottom: 15 },
+  card: { backgroundColor: "white", borderRadius: 14, borderWidth: 1, borderColor: "#e2e8f0", padding: 14, marginBottom: 12 },
+  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a", marginBottom: 6 },
+  muted: { color: "#64748b", fontSize: 13, marginTop: 4 },
+  label: { color: "#334155", fontWeight: "600", marginBottom: 6, marginTop: 12 },
+  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 10, padding: 11, backgroundColor: "white", color: "#0f172a", fontSize: 15 },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginVertical: 8 },
+  chip: { borderColor: "#cbd5e1", borderWidth: 1, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 12, backgroundColor: "white" },
+  chipActive: { borderColor: "#2563eb", backgroundColor: "#dbeafe" },
+  chipText: { color: "#334155", fontWeight: "600" },
+  button: { backgroundColor: "#2563eb", borderRadius: 10, padding: 13, alignItems: "center", marginTop: 12 },
+  buttonText: { color: "white", fontWeight: "700" },
+  secondary: { borderColor: "#cbd5e1", borderWidth: 1, backgroundColor: "white" },
+  secondaryText: { color: "#334155" },
+  error: { color: "#b91c1c", marginVertical: 10, fontWeight: "600" },
+  success: { color: "#047857", marginVertical: 10, fontWeight: "600" },
+  summary: { fontSize: 15, fontWeight: "700", color: "#0f172a" },
+});
