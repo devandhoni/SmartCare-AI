@@ -37,6 +37,7 @@ import VisitorsScreen from "../screens/operations/VisitorsScreen";
 import HomeLeaveScreen from "../screens/operations/HomeLeaveScreen";
 import ParcelsScreen from "../screens/operations/ParcelsScreen";
 import BillingScreen from "../screens/billing/BillingScreen";
+import ReportsScreen from "../screens/reports/ReportsScreen";
 export type AppStackParamList = {
   MainTabs: undefined;
   FamilyContacts: undefined;
@@ -51,6 +52,7 @@ export type AppStackParamList = {
   WeeklyVitals: undefined;
   Inventory: undefined;
   Billing: undefined;
+  Reports: undefined;
   DischargeWizard: { dischargeId?: number } | undefined;
   AdmissionWizard: { draftId?: number } | undefined;
   CarePlans: undefined;
@@ -142,6 +144,7 @@ function MainTabs({
   if (module === "HomeLeave") { navigation.navigate("HomeLeave"); return; }
   if (module === "Parcels") { navigation.navigate("Parcels"); return; }
   if (module === "Billing") { navigation.navigate("Billing"); return; }
+  if (module === "Reports") { navigation.navigate("Reports"); return; }
   if (module === "Admissions") {
     navigation.navigate("Admissions");
     return;
@@ -342,6 +345,7 @@ export default function AppNavigator() {
       <Stack.Screen name="AdmissionWizard" component={AdmissionWizardScreen} options={{ title: "Admission Wizard", headerBackTitle: "Admissions" }} />
 
       <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing & Payments", headerBackTitle: "Back" }} />
+      <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports", headerBackTitle: "Back" }} />
       <Stack.Screen
         name="Inventory"
         component={InventoryScreen}
