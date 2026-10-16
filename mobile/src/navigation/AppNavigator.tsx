@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Text } from "react-native";
 import {
   createBottomTabNavigator,
@@ -28,8 +28,14 @@ import MonthlyGlucoseScreen from "../screens/monitoring/MonthlyGlucoseScreen";
 import WeeklyVitalsScreen from "../screens/monitoring/WeeklyVitalsScreen";
 import InventoryScreen from "../screens/inventory/InventoryScreen";
 
+import VisitorsScreen from "../screens/operations/VisitorsScreen";
+import HomeLeaveScreen from "../screens/operations/HomeLeaveScreen";
+import ParcelsScreen from "../screens/operations/ParcelsScreen";
 export type AppStackParamList = {
   MainTabs: undefined;
+  Parcels: undefined;
+  HomeLeave: undefined;
+  Visitors: undefined;
   Admissions: undefined;
   Discharges: undefined;
   MonthlyGlucose: undefined;
@@ -116,6 +122,9 @@ function MainTabs({
   "MainTabs"
 >) {
   const openModule = (module: MobileModule) => {
+  if (module === "Visitors") { navigation.navigate("Visitors"); return; }
+  if (module === "HomeLeave") { navigation.navigate("HomeLeave"); return; }
+  if (module === "Parcels") { navigation.navigate("Parcels"); return; }
   if (module === "Admissions") {
     navigation.navigate("Admissions");
     return;
@@ -173,7 +182,7 @@ if (module === "Inventory") {
           title: "Today",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 20 }}>
-              ☀
+              {"\u2600"}
             </Text>
           ),
         }}
@@ -186,7 +195,7 @@ if (module === "Inventory") {
           title: "Residents",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 20 }}>
-              👥
+              {"\uD83D\uDC65"}
             </Text>
           ),
         }}
@@ -199,7 +208,7 @@ if (module === "Inventory") {
           title: "Medication",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 20 }}>
-              💊
+              {"\uD83D\uDC8A"}
             </Text>
           ),
         }}
@@ -212,7 +221,7 @@ if (module === "Inventory") {
           title: "Tasks",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 20 }}>
-              ✓
+              {"\u2713"}
             </Text>
           ),
         }}
@@ -224,7 +233,7 @@ if (module === "Inventory") {
           title: "More",
           tabBarIcon: ({ color }) => (
             <Text style={{ color, fontSize: 22 }}>
-              ⋯
+              {"\u22EF"}
             </Text>
           ),
         }}
@@ -323,6 +332,9 @@ export default function AppNavigator() {
       />
 
       
+            <Stack.Screen name="Visitors" component={VisitorsScreen} options={{ title: "Visitors" }} />
+      <Stack.Screen name="HomeLeave" component={HomeLeaveScreen} options={{ title: "Home Leave" }} />
+      <Stack.Screen name="Parcels" component={ParcelsScreen} options={{ title: "Parcels" }} />
       <Stack.Screen
         name="Module"
         component={ModuleScreen}
