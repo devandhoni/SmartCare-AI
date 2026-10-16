@@ -27,12 +27,16 @@ import DischargeWizardScreen from "../screens/discharges/DischargeWizardScreen";
 import MonthlyGlucoseScreen from "../screens/monitoring/MonthlyGlucoseScreen";
 import WeeklyVitalsScreen from "../screens/monitoring/WeeklyVitalsScreen";
 import InventoryScreen from "../screens/inventory/InventoryScreen";
+import FamilyContactsScreen from "../screens/family/FamilyContactsScreen";
+import FamilyMessagesScreen from "../screens/family/FamilyMessagesScreen";
 
 import VisitorsScreen from "../screens/operations/VisitorsScreen";
 import HomeLeaveScreen from "../screens/operations/HomeLeaveScreen";
 import ParcelsScreen from "../screens/operations/ParcelsScreen";
 export type AppStackParamList = {
   MainTabs: undefined;
+  FamilyContacts: undefined;
+  FamilyMessages: undefined;
   Parcels: undefined;
   HomeLeave: undefined;
   Visitors: undefined;
@@ -79,6 +83,7 @@ const moduleTitles: Record<MobileModule, string> = {
   Residents: "Residents",
   Medication: "Medication",
   FamilyMessages: "Family Messages",
+  FamilyContacts: "Family Contacts",
   NurseTasks: "Nurse Tasks",
   CareRecords: "Care Records",
   CarePlans: "Care Plans",
@@ -122,6 +127,8 @@ function MainTabs({
   "MainTabs"
 >) {
   const openModule = (module: MobileModule) => {
+  if (module === "FamilyContacts") { navigation.navigate("FamilyContacts"); return; }
+  if (module === "FamilyMessages") { navigation.navigate("FamilyMessages"); return; }
   if (module === "Visitors") { navigation.navigate("Visitors"); return; }
   if (module === "HomeLeave") { navigation.navigate("HomeLeave"); return; }
   if (module === "Parcels") { navigation.navigate("Parcels"); return; }
@@ -332,7 +339,9 @@ export default function AppNavigator() {
       />
 
       
-            <Stack.Screen name="Visitors" component={VisitorsScreen} options={{ title: "Visitors" }} />
+            <Stack.Screen name="FamilyContacts" component={FamilyContactsScreen} options={{ title: "Family Contacts" }} />
+      <Stack.Screen name="FamilyMessages" component={FamilyMessagesScreen} options={{ title: "Family Messages" }} />
+      <Stack.Screen name="Visitors" component={VisitorsScreen} options={{ title: "Visitors" }} />
       <Stack.Screen name="HomeLeave" component={HomeLeaveScreen} options={{ title: "Home Leave" }} />
       <Stack.Screen name="Parcels" component={ParcelsScreen} options={{ title: "Parcels" }} />
       <Stack.Screen
