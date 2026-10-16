@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Text } from "react-native";
 import {
   createBottomTabNavigator,
@@ -29,6 +29,7 @@ import WeeklyVitalsScreen from "../screens/monitoring/WeeklyVitalsScreen";
 import InventoryScreen from "../screens/inventory/InventoryScreen";
 import FamilyContactsScreen from "../screens/family/FamilyContactsScreen";
 import FamilyMessagesScreen from "../screens/family/FamilyMessagesScreen";
+import AIIntelligenceScreen from "../screens/ai/AIIntelligenceScreen";
 
 import VisitorsScreen from "../screens/operations/VisitorsScreen";
 import HomeLeaveScreen from "../screens/operations/HomeLeaveScreen";
@@ -37,6 +38,7 @@ export type AppStackParamList = {
   MainTabs: undefined;
   FamilyContacts: undefined;
   FamilyMessages: undefined;
+  AIIntelligence: undefined;
   Parcels: undefined;
   HomeLeave: undefined;
   Visitors: undefined;
@@ -127,6 +129,7 @@ function MainTabs({
   "MainTabs"
 >) {
   const openModule = (module: MobileModule) => {
+  if (module === "AIIntelligence") { navigation.navigate("AIIntelligence"); return; }
   if (module === "FamilyContacts") { navigation.navigate("FamilyContacts"); return; }
   if (module === "FamilyMessages") { navigation.navigate("FamilyMessages"); return; }
   if (module === "Visitors") { navigation.navigate("Visitors"); return; }
@@ -341,6 +344,7 @@ export default function AppNavigator() {
       
             <Stack.Screen name="FamilyContacts" component={FamilyContactsScreen} options={{ title: "Family Contacts" }} />
       <Stack.Screen name="FamilyMessages" component={FamilyMessagesScreen} options={{ title: "Family Messages" }} />
+      <Stack.Screen name="AIIntelligence" component={AIIntelligenceScreen} options={{ title: "AI Intelligence" }} />
       <Stack.Screen name="Visitors" component={VisitorsScreen} options={{ title: "Visitors" }} />
       <Stack.Screen name="HomeLeave" component={HomeLeaveScreen} options={{ title: "Home Leave" }} />
       <Stack.Screen name="Parcels" component={ParcelsScreen} options={{ title: "Parcels" }} />
