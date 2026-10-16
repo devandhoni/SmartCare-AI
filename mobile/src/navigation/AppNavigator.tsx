@@ -39,6 +39,7 @@ import ParcelsScreen from "../screens/operations/ParcelsScreen";
 import BillingScreen from "../screens/billing/BillingScreen";
 import ReportsScreen from "../screens/reports/ReportsScreen";
 import StaffAdministrationScreen from "../screens/staff/StaffAdministrationScreen";
+import AuditHistoryScreen from "../screens/audit/AuditHistoryScreen";
 export type AppStackParamList = {
   MainTabs: undefined;
   FamilyContacts: undefined;
@@ -55,6 +56,7 @@ export type AppStackParamList = {
   Billing: undefined;
   Reports: undefined;
   StaffAdministration: undefined;
+  AuditHistory: undefined;
   DischargeWizard: { dischargeId?: number } | undefined;
   AdmissionWizard: { draftId?: number } | undefined;
   CarePlans: undefined;
@@ -110,6 +112,7 @@ const moduleTitles: Record<MobileModule, string> = {
   Parcels: "Parcels",
   AIIntelligence: "AI Intelligence",
   StaffAdministration: "Staff Administration",
+  AuditHistory: "Audit History",
   Reports: "Reports",
   ManagementDashboard: "Management Dashboard",
 };
@@ -148,6 +151,7 @@ function MainTabs({
   if (module === "Billing") { navigation.navigate("Billing"); return; }
   if (module === "Reports") { navigation.navigate("Reports"); return; }
   if (module === "StaffAdministration") { navigation.navigate("StaffAdministration"); return; }
+  if (module === "AuditHistory") { navigation.navigate("AuditHistory"); return; }
   if (module === "Admissions") {
     navigation.navigate("Admissions");
     return;
@@ -350,6 +354,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing & Payments", headerBackTitle: "Back" }} />
       <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: "Reports", headerBackTitle: "Back" }} />
       <Stack.Screen name="StaffAdministration" component={StaffAdministrationScreen} options={{ title: "Staff Administration", headerBackTitle: "Back" }} />
+      <Stack.Screen name="AuditHistory" component={AuditHistoryScreen} options={{ title: "Audit History", headerBackTitle: "Back" }} />
       <Stack.Screen
         name="Inventory"
         component={InventoryScreen}

@@ -19,6 +19,7 @@ export type MobileModule =
   | "HomeLeave"
   | "Parcels"
   | "AIIntelligence"
+  | "AuditHistory"
   | "StaffAdministration"
   | "Reports"
   | "ManagementDashboard";
@@ -153,6 +154,11 @@ export const moreMenuSections: MobileMenuSection[] = [
       {
         name: "Staff Administration",
         route: "StaffAdministration",
+        roles: administratorRoles,
+      },
+      {
+        name: "Audit History",
+        route: "AuditHistory",
         roles: administratorRoles,
       },
       {
