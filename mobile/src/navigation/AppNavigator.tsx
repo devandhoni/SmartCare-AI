@@ -30,6 +30,8 @@ import InventoryScreen from "../screens/inventory/InventoryScreen";
 import FamilyContactsScreen from "../screens/family/FamilyContactsScreen";
 import FamilyMessagesScreen from "../screens/family/FamilyMessagesScreen";
 import AIIntelligenceScreen from "../screens/ai/AIIntelligenceScreen";
+import ResidentTimelineScreen from "../screens/residents/ResidentTimelineScreen";
+import ResidentDocumentsScreen from "../screens/residents/ResidentDocumentsScreen";
 
 import VisitorsScreen from "../screens/operations/VisitorsScreen";
 import HomeLeaveScreen from "../screens/operations/HomeLeaveScreen";
@@ -58,6 +60,8 @@ export type AppStackParamList = {
   ResidentProfile: {
     residentId: number;
   };
+  ResidentTimeline: { residentId: number };
+  ResidentDocuments: { residentId: number };
   ResidentVitals: {
     residentId: number;
   };
@@ -290,6 +294,8 @@ export default function AppNavigator() {
         }}
       />
 
+      <Stack.Screen name="ResidentTimeline" component={ResidentTimelineScreen} options={{ title: "Clinical Timeline" }} />
+      <Stack.Screen name="ResidentDocuments" component={ResidentDocumentsScreen} options={{ title: "Resident Documents" }} />
       <Stack.Screen
         name="ResidentVitals"
         component={ResidentVitalsScreen}

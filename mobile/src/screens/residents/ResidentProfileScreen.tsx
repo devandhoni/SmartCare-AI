@@ -219,6 +219,12 @@ export default function ResidentProfileScreen() {
             </Text>
         </Pressable>
 
+        <Pressable style={styles.clinicalButton} onPress={() => navigation.navigate("ResidentTimeline", {residentId})}>
+          <View style={styles.clinicalButtonText}><Text style={styles.clinicalButtonTitle}>Clinical Timeline</Text><Text style={styles.clinicalButtonSubtitle}>Review resident care history</Text></View><Text style={styles.clinicalButtonArrow}>{"\u203A"}</Text>
+        </Pressable>
+        <Pressable style={styles.clinicalButton} onPress={() => navigation.navigate("ResidentDocuments", {residentId})}>
+          <View style={styles.clinicalButtonText}><Text style={styles.clinicalButtonTitle}>Resident Documents</Text><Text style={styles.clinicalButtonSubtitle}>View and manage resident files</Text></View><Text style={styles.clinicalButtonArrow}>{"\u203A"}</Text>
+        </Pressable>
         <Section title="Resident Overview">
           <InfoRow
             label="Date of Birth"
@@ -307,7 +313,7 @@ export default function ResidentProfileScreen() {
 
           <Text style={styles.noticeText}>
             Vitals, medication, care,
-            timeline, documents, family and
+            family and
             other resident workflows will be
             available from this profile as
             their mobile modules are completed.
