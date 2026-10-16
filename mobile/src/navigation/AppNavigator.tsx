@@ -36,6 +36,7 @@ import ResidentDocumentsScreen from "../screens/residents/ResidentDocumentsScree
 import VisitorsScreen from "../screens/operations/VisitorsScreen";
 import HomeLeaveScreen from "../screens/operations/HomeLeaveScreen";
 import ParcelsScreen from "../screens/operations/ParcelsScreen";
+import BillingScreen from "../screens/billing/BillingScreen";
 export type AppStackParamList = {
   MainTabs: undefined;
   FamilyContacts: undefined;
@@ -49,6 +50,7 @@ export type AppStackParamList = {
   MonthlyGlucose: undefined;
   WeeklyVitals: undefined;
   Inventory: undefined;
+  Billing: undefined;
   DischargeWizard: { dischargeId?: number } | undefined;
   AdmissionWizard: { draftId?: number } | undefined;
   CarePlans: undefined;
@@ -139,6 +141,7 @@ function MainTabs({
   if (module === "Visitors") { navigation.navigate("Visitors"); return; }
   if (module === "HomeLeave") { navigation.navigate("HomeLeave"); return; }
   if (module === "Parcels") { navigation.navigate("Parcels"); return; }
+  if (module === "Billing") { navigation.navigate("Billing"); return; }
   if (module === "Admissions") {
     navigation.navigate("Admissions");
     return;
@@ -338,6 +341,7 @@ export default function AppNavigator() {
       <Stack.Screen name="Admissions" component={AdmissionsScreen} options={{ title: "Admissions", headerBackTitle: "Back" }} />
       <Stack.Screen name="AdmissionWizard" component={AdmissionWizardScreen} options={{ title: "Admission Wizard", headerBackTitle: "Admissions" }} />
 
+      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: "Billing & Payments", headerBackTitle: "Back" }} />
       <Stack.Screen
         name="Inventory"
         component={InventoryScreen}
